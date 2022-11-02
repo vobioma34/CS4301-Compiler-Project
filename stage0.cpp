@@ -4,6 +4,7 @@
 
 #ifndef STAGE0_H
 #define STAGE0_H
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -22,7 +23,7 @@ class SymbolTableEntry
 public:
   // Public functions
   SymbolTableEntry(string in, storeTypes st, modes m,
-                   string v, allocation v, int u)
+                   string v, allocation a, int u)
   {
     setInternalName(in);
     setDataType(st);
@@ -77,6 +78,7 @@ private:
   int units;
   // End of the private field
 };
+#endif
 // Editor: Victor Obioma
 // edited 11/1/2022 1:26pm
 // Next is the creation of the Compiler class below...
