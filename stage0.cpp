@@ -161,5 +161,23 @@ bool Compiler :: isNonKeyId(string s) const {
     return !isKeyword(s);
 }
 
+string Compiler::ids()
+{
+	string temp, tempString;
+	if (!isNonKeyId(token)) {
+		processError("non-keyword identifier expected");
+	}
+	tempString = token;
+	temp = token;
+	if (nextToken() == ",") {
+		if (!isNonKeyId(nextToken())) {
+			processError("non-keyword identifier expected");
+		}
+		tempString = temp;
+		tempString += ",";
+		tempString += ids();
+	}
+	return tempString;
+}
 
 
