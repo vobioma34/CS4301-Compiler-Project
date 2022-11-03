@@ -1,43 +1,47 @@
 //Esai Barron and Victor Obioma
 //CS 4301
 //Stage 0
-
 #include <stage0.h>
 #include <iostream>
 #include <ctime>
 
 using namespace std;
 
-//constructor
-Compiler::Compiler(char **argv) {
+Compiler::Compiler(char **argv) 
+{
+   /*
+   open sourceFile using argv[1]
+   open listingFile using argv[2]
+   open objectFile using argv[3]
+   */
     //open source file using argv[1]
     sourceFile.open(argv[1]);
     //open listing file using argv[2]
     listingFile.open(argv[2]);
     //open objectFile using argv[3]
     objectFile.open(argv[3]);
-
 }
-
-//destructor
-Compiler::~Compiler(){
-    sourceFile.close();
+Compiler::~Compiler()
+{
+	// close all open files
+	sourceFile.close();
     listingFile.close();
     objectFile.close();
 }
-
-void Compiler::createListingHeader(){
-
-
+void Compiler::createListingHeader()
+{
+	time_t result = time(nullptr);
+	cout << "STAGE0:" << "Esai Baron and Victor Obioma" << ctime(&result) << endl;
+	cout << "LINE NO:" << "SOURCE STATEMENT" << endl;
 }
-
-//"new int main() - Womack 2022"
-void Compiler::parser() {
-    cout << "sussy balls" << endl;
+// "the new int main()"
+void Compiler::parser()
+{
+	
 }
-
-void Compiler::createListingTrailer(){
-
+void Compiler::createListingTrailer()
+{
+	cout << "COMPILATION TERMINATED" << "# ERRORS ENCOUNTERED" << endl;
 }
 
 
