@@ -44,5 +44,18 @@ void Compiler::createListingTrailer()
 	cout << "COMPILATION TERMINATED" << "# ERRORS ENCOUNTERED" << endl;
 }
 
+char Compiler :: nextChar(){
+    //char nextChar; 
+    //read in next char
+    //sourceFile.get(ch);
+    if(sourceFile.eof()){
+        ch = END_OF_FILE;
+    }
+    else {
+        sourceFile.get(ch);
+    }
+    listingFile << ch;
+    return ch;
+}
 
 
