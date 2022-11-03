@@ -161,6 +161,25 @@ bool Compiler :: isNonKeyId(string s) const {
     return !isKeyword(s);
 }
 
+//determines if s is an integer
+bool Compiler :: isInteger(string s) const {
+    if(isdigit(stoi(s))){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+bool Compiler :: isBoolean(string s) const{
+    if (s == "boolean") {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 string Compiler::ids()
 {
 	string temp, tempString;
