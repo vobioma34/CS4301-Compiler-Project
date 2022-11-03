@@ -4,11 +4,12 @@
 
 #include <stage0.h>
 #include <iostream>
+#include <ctime>
 
 using namespace std;
 
 //constructor
-Compiler(char **argv) {
+Compiler::Compiler(char **argv) {
     //open source file using argv[1]
     sourceFile.open(argv[1]);
     //open listing file using argv[2]
@@ -19,14 +20,25 @@ Compiler(char **argv) {
 }
 
 //destructor
-~Compiler(){
+Compiler::~Compiler(){
     sourceFile.close();
     listingFile.close();
     objectFile.close();
 }
 
-void createListingHeader(){
+void Compiler::createListingHeader(){
 
-    //GET CODE FROM VICTOR/GITHUB
+
 }
+
+//"new int main() - Womack 2022"
+void Compiler::parser() {
+    cout << "sussy balls" << endl;
+}
+
+void Compiler::createListingTrailer(){
+
+}
+
+
 
