@@ -130,5 +130,36 @@ char Compiler::nextChar()
     return ch;
 }
 
+/*----------------------helper functions frompage 4 of pseudo code-----------------*/
+//determines if s is a keyword, true if s is a keyword and false otherwise
+bool Compiler :: isKeyword(string s) const{
+    string keywords[] = {"program", "const", "var", "integer", "boolean", 
+                            "begin", "end", "true", "false", "not"};
+
+    //go through keywords array and see if s matches nay key words
+    for(int i = 0; i < 10; i++){ //change hardcoded 10 and ask Dr.Motl
+        if (s == keywords[i]) {
+            return true; //if s matches a keyword, return true
+        }
+    }
+    return false; //s did not match any keywords
+}
+//determines if c is a special symbol, true is it is a special symbol otherwise false
+bool Compiler :: isSpecialSymbol(char c) const {
+    char specialSymbols[] = {':', ',', ';', '=', '+', '-', '.'};
+
+    for(int i = 0; i < 7; i++){
+         if (c == specialSymbols[i]) {
+            return true; //if c matches a special symbol, return true
+        }
+    }
+
+    return false; //c is not a special symbol
+}
+
+bool Compiler :: isNonKeyId(string s) const {
+    return !isKeyword(s);
+}
+
 
 
