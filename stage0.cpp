@@ -62,10 +62,72 @@ char Compiler :: nextChar(){
     return ch;
 }
 
-string Compiler :: nextToken(){
-
-    //GET CODE FROM VICTOR/GITHUB
-    return "default";
+string Compiler :: nextToken() {
+	token = "";
+	while (token == "")
+	{
+		if (ch == '{') { // process comment
+			while (nextChar() != END_OF_FILE || nextChar() != '}') {
+				// Empty body
+			}
+			if (ch == END_OF_FILE) {
+				processError("unexpected end of file");
+			} else {
+				nextChar();
+			}
+		}
+		else if (ch == '}') {
+			processError("'}' cannot begin token");
+		}
+		else if (isspace(ch) == true) {
+			nextChar();
+		}
+		else if (isSpecialSymbol(ch) == true) {
+			token = ch;
+			nextChar();
+		}
+		else if (islower(ch) == true) {
+			token = ch;
+			while (((nextChar() == '_') || (isalpha(nextChar())) || (isdigit(nextChar()))) && (nextChar() != END_OF_FILE)) 
+			{
+				token += ch;
+			}
+			if (ch == END_OF_FILE) {
+				processError("unexpected end of file");
+			}
+		}
+		else if (isdigit(ch) == true) {
+			token = ch;
+			while ((isdigit(nextChar()) == true) && (nextChar() != END_OF_FILE))
+			{
+				token += ch;
+			}
+			if (ch == END_OF_FILE) {
+				processError("unexpected end of file");
+			}
+		}
+		else if (ch == END_OF_FILE) {
+			token =  ch;
+		}
+		else {
+			processError("illegal symbol");
+		}
+	}
+	return token;
+}
+char Compiler::nextChar()
+{
+	//char nextChar; 
+    //read in next char
+    //sourceFile.get(ch);
+    if(sourceFile.eof()){
+        ch = END_OF_FILE;
+    }
+    else {
+        sourceFile.get(ch);
+    }
+    listingFile << ch;
+    return ch;
 }
 
 
