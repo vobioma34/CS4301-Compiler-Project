@@ -250,5 +250,30 @@ string Compiler::ids()
 	}
 	return tempString;
 }
+storeTypes Compiler :: whichType(string name){
+	//will need store types enum called dataType
+	storeTypes dataType;
+
+	if(isLiteral(name)){
+		if(isBoolean(name)){
+			dataType = BOOLEAN;
+		}
+		else{
+			dataType = INTEGER;
+		}
+	}
+	else {
+		auto it = symbolTable.find(name);
+
+		if(symbolTable.count(name) == 1){
+			dataType = (*it).second.getDataType();
+		}
+		else{
+			processError("reference to undefined constant");
+		}
+	}
+
+	return dataType;
+}
 
 
