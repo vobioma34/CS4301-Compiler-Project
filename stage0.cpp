@@ -187,6 +187,51 @@ bool Compiler :: isLiteral(string s) const {
 	return false;
 }
 
+//determines if s is a nonKeyid
+bool Compiler :: isNonKeyId(string s) const {
+
+	//make sure s starts with an alpha
+	if(isalpha(s[0]) == false){
+		return false;
+	}
+	//make sure s is not a keyword
+	if(isKeyword(s)){
+		return false;
+	}
+
+	//make sure all chars are lowercase
+	for(uint i = 0; i < s.length(); i++){
+		if(isdigit(s[i]) == false){
+			if(islower(s[i]) == false){
+				return false;
+			}
+		}
+	}
+
+	//make sure the 15th character is not an underscore
+	if(s.length() >= 15){
+		if(s[15] == '_'){
+			return false;
+		}
+	}
+
+	//make sure no special symbols are in s, with exceiption of underscore '_', also make sure no spaces in name
+	int uscoreCount = 0;
+    for(uint i = 0; i < s.length(); i++){
+		//non key id can have oneunderscore
+		if(s[i] == '_'){
+			uscoreCount++;
+			continue;
+		}
+		else if(isSpecialSymbol(s[i]) || uscoreCount > 1 || isspace(s[i])){
+			return false;
+		}
+	}
+	
+	//dummy return to satify warning
+	return false;
+}
+
 string Compiler::ids()
 {
 	string temp, tempString;
