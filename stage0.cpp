@@ -180,6 +180,13 @@ bool Compiler :: isBoolean(string s) const{
     }
 }
 
+bool Compiler :: isLiteral(string s) const {
+    if(isBoolean(s) || isInteger(s)){
+		return true;
+	}
+	return false;
+}
+
 string Compiler::ids()
 {
 	string temp, tempString;
