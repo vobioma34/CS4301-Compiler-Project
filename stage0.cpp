@@ -293,3 +293,78 @@ string Compiler :: whichValue(string name){
 	}
 	return value;
 }
+
+void Compiler::insert(string externalName, storeTypes inType, modes InMode, string inValue, allocation inAlloc, int inUnits)
+{
+	// create symbol table entry for each identifier in list of external names
+	// Multiply inserted names are illegal
+	//    KEY        VALUE
+	//map<string, SymbolTableEntry> symbolTable;
+	//string name;
+	//name = "";
+	//...
+	
+}
+void Compiler::constStmts() // token should be NON_KEY_ID
+{
+	string x,y;
+	if (!isNonKeyId(token)) {
+		processError("non-keyword identifier expected");
+	}
+	
+	x = token;
+	
+	if (nextToken() != "=") {
+		processError("\"=\" expected");
+	}
+	
+	y = nextToken();
+	
+	if (y != "+" && y != "-" && y != "not" && !isNonKeyId(x) && y != "true" && y != "false" && whichType(y) != INTEGER) {
+		processError("token to right of \"=\" illegal");
+	}
+	
+	if (y == "+" || y != "-") {
+		
+		if (whichType(nextToken()) != INTEGER) {
+			processError("integer expected after sign");
+		}
+		
+		y = y + token;
+	}
+	
+	if (y == "not") {
+		
+		if (whichType(nextToken()) != BOOLEAN) {
+			processError("boolean expected after \"not\"");
+		}
+		
+		if (token == "true") {
+			y = "false";
+		}
+		
+		else {
+			y = "true";
+		}
+	}
+	
+	if (nextToken() != ";") {
+		processError("semicolon expected");
+	}
+	
+	if (whichType(y) != INTEGER || whichType(y) != BOOLEAN) {
+		processError("data type of token on the right-hand side must be INTEGER or BOOLEAN");
+	}
+	
+	insert(x, whichType(y), CONSTANT, whichValue(y), YES, 1);
+	
+	x = nextToken();
+	
+	if (x != "begin" && x != "var" && !isNonKeyId(x)) {
+		processError("non-keyword identifier, \"begin\", or \"var\" expected");
+	}
+	
+	if (isNonKeyId(x) == true) {
+		constStmts();
+	}
+}
