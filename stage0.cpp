@@ -276,4 +276,20 @@ storeTypes Compiler :: whichType(string name){
 	return dataType;
 }
 
+string Compiler :: whichValue(string name){
+	string value;
+	if(isLiteral(name) == true){
+		value = name;
+	}
+	else {
+		auto it = symbolTable.find(name);
 
+		if(symbolTable.count(name) == 1){
+			value = (*it).second.getDataType();
+		}
+		else{
+			processError("reference to undefined constant");
+		}
+	}
+	return value;
+}
