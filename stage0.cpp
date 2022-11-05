@@ -297,14 +297,36 @@ string Compiler :: whichValue(string name){
 
 void Compiler::insert(string externalName, storeTypes inType, modes InMode, string inValue, allocation inAlloc, int inUnits)
 {
-	// create symbol table entry for each identifier in list of external names
-	// Multiply inserted names are illegal
-	//    KEY        VALUE
-	//map<string, SymbolTableEntry> symbolTable;
-	//string name;
-	//name = "";
-	//...
-	
+	string name;
+	unsigned int nameOfCurrentList = 0;
+	while (nameOfCurrentList < externalName.length()) {
+		name = "";
+		while (name == "") {
+			while (nameOfCurrentList < externalName.length() && externalName[nameOfCurrentList] != ',') {
+			   name = name + externalName[nameOfCurrentList];
+			   nameOfCurrentList = nameOfCurrentList + 1;
+			}
+			
+			nameOfCurrentList += 1;
+			
+			name = name.substr(0, 15);
+			
+			if (symbolTable.count(name) > 0) {
+				processError("multiple name definition");
+			} else if (isKeyword(name) && name != "true" && name != "false") {
+				processError("illegal use of keyword");
+			} else {
+				if (isupper(name[0])) {
+					symbolTable.insert({ name, SymbolTableEntry(name, inType, inMode, inValue, inAlloc, inUnits) });
+				} else {
+					symbolTable.insert({ name, SymbolTableEntry(genInternalName(inType), inType, inMode, inValue, inAlloc, inUnits) });
+				}
+			}
+		}
+		if (symbolTable.size() > 256) {
+			processError("symbol table cannot exceed 256");
+		}
+	}
 }
 void Compiler::constStmts() // token should be NON_KEY_ID
 {
