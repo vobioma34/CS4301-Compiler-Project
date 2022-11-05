@@ -36,7 +36,11 @@ void Compiler::createListingHeader(){
 
 //"new int main() - Womack 2022"
 void Compiler::parser() {
-    //cout << "sussy balls" << endl;
+    nextChar();
+    if(nextToken() != "program"){
+	processError("keyword \"program\" expected");
+    }
+    prog();
 }
 
 void Compiler::createListingTrailer(){
