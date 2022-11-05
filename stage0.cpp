@@ -295,7 +295,7 @@ string Compiler :: whichValue(string name){
 	return value;
 }
 
-void Compiler::insert(string externalName, storeTypes inType, modes InMode, string inValue, allocation inAlloc, int inUnits)
+void Compiler::insert(string externalName, storeTypes inType, modes inMode, string inValue, allocation inAlloc, int inUnits)
 {
 	string name;
 	unsigned int nameOfCurrentList = 0;
