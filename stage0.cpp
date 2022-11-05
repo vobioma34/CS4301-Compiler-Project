@@ -524,3 +524,23 @@ void Compiler::emitEpilogue(string operand1, string operand2)
 	emit("", "Exit", "{0}");
 	emitStorage();
 }
+//get emit storage from victor
+
+//these variables are used for genInternalName()
+static int boolCount = 0;
+static int integerCount = 0;
+string Compiler :: genInternalName(storeTypes stype) const{
+
+	string internalName;
+
+	if(stype == INTEGER){
+		internalName =  "I " + to_string(integerCount);
+		integerCount++;
+	}
+	if(stype == BOOLEAN){
+		internalName = "B " + to_string(boolCount);
+		boolCount++;
+	}
+
+	return internalName;
+}
