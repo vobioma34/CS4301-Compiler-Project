@@ -454,3 +454,34 @@ void Compiler::beginEndStmt() // token should be "begin"
 	nextToken();
 	code("end", ".");
 }
+void Compiler :: varStmts(){
+	string x, y;
+
+	if(isNonKeyId(token) == false){
+		processError("non-keyword identifier expected");
+	}
+
+	x = ids();
+
+	if(token != ":"){
+		processError("\":\" expected");
+	}
+	if(isInteger(nextToken()) == false && isBoolean(nextToken()) == false){
+		processError("illegal type follows \":\"");
+	}
+
+	y = token;
+
+	if(nextToken() != ";"){
+		processError("semicolon expected");
+	}
+
+	insert(x,whichType(y),VARIABLE,"",YES,1);
+
+	if(nextToken() != "begin" &&  isNonKeyId(nextToken()) == false){
+		processError("(non-keyword identifier or \"begin\" expected");
+	}
+	if(isNonKeyId(token)){
+		varStmts();
+	}
+}
