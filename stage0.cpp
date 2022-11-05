@@ -69,10 +69,11 @@ char Compiler :: nextChar(){
 
 string Compiler :: nextToken() {
 	token = "";
+	ch = nextChar();
 	while (token == "")
 	{
 		if (ch == '{') { // process comment
-			while (nextChar() != END_OF_FILE || nextChar() != '}') {
+			while (ch != END_OF_FILE || ch != '}') {
 				// Empty body
 			}
 			if (ch == END_OF_FILE) {
@@ -93,7 +94,7 @@ string Compiler :: nextToken() {
 		}
 		else if (islower(ch) == true) {
 			token = ch;
-			while (((nextChar() == '_') || (isalpha(nextChar())) || (isdigit(nextChar()))) && (nextChar() != END_OF_FILE)) 
+			while (((ch == '_') || (isalpha(ch)) || (isdigit(ch))) && (ch != END_OF_FILE)) 
 			{
 				token += ch;
 			}
@@ -103,7 +104,7 @@ string Compiler :: nextToken() {
 		}
 		else if (isdigit(ch) == true) {
 			token = ch;
-			while ((isdigit(nextChar()) == true) && (nextChar() != END_OF_FILE))
+			while ((isdigit(ch) == true) && (ch != END_OF_FILE))
 			{
 				token += ch;
 			}
