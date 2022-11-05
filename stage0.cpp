@@ -522,7 +522,7 @@ void Compiler :: emitPrologue(string progName, string operand2){
 }
 void Compiler::emitEpilogue(string operand1, string operand2)
 {
-	emit("", "Exit", "{0}");
+	emit("", "Exit", "{0}", "");
 	emitStorage();
 }
 //get emit storage from victor
@@ -544,4 +544,19 @@ string Compiler :: genInternalName(storeTypes stype) const{
 	}
 
 	return internalName;
+}
+void Compiler::emitStorage()
+{
+	emit("SECTION", ".data", "", "");
+	 for (auto it = symbolTable.cbegin(); it != symbolTable.cend(); ++it) {
+		 if (((*it).second.getAlloc() == YES) && ((*it).second.getMode() == CONSTANT)) {
+			 emit((*it).second.getInternalName(), to_string((*it).second.getUnits()), (*it).second.getValue(), (";"+(*it).first));
+		 }
+	 }
+	 emit("SECTION", ".bss", "", "");
+	 for (auto it = symbolTable.cbegin(); it != symbolTable.cend(); ++it) {
+		 if (((*it).second.getAlloc() == YES) && ((*it).second.getMode() == VARIABLE)) {
+			 emit((*it).second.getInternalName(), to_string((*it).second.getUnits()), (*it).second.getValue(), (";"+(*it).first));
+		 }
+	 }
 }
