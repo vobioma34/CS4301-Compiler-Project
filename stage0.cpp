@@ -368,3 +368,25 @@ void Compiler::constStmts() // token should be NON_KEY_ID
 		constStmts();
 	}
 }
+
+void Compiler :: consts() {
+
+	if(token != "const"){   
+		processError("keyword \"const\" expected");
+	}
+
+	if(isNonKeyId(nextToken()) == false){
+		processError("non-keyword identifier must follow \"const\"");
+	}
+	constStmts();
+}
+
+void Compiler :: vars(){
+	if(token != "var"){
+		processError("keyword \"var\" expected");
+	}
+	if(isNonKeyId(nextToken()) == false){
+		processError("non-keyword identifier must follow \"var\"");
+	}
+}
+
