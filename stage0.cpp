@@ -485,6 +485,19 @@ void Compiler :: varStmts(){
 		varStmts();
 	}
 }
+
+void Compiler :: code(string op, string operand1, string operand2) {
+	if(op == "program"){
+		emitPrologue(operand1);
+	}
+	else if(op == "end"){
+		emitEpilogue();
+	}
+	else{
+		processError("compiler error since function code should not be called with illegal arguments");
+	}
+}
+
 void Compiler::emit(string label, string instruction, string operands, string comment)
 {
 	/*
@@ -495,4 +508,14 @@ void Compiler::emit(string label, string instruction, string operands, string co
 	Output the comment
 	*/
 	objectFile << left << setw(8) << label << setw(8) << instruction << setw(24) << operands << comment << "\r\n";
+}
+void Compiler :: emitPrologue(string progName, string operand2){
+	 time_t result = time(nullptr);
+	objectFile << "STAGE0:          " << "Esai Baron and Victor Obioma         " << ctime(&result) << "\r\n";
+	objectFile << "%INCLUDE \"Along32.inc\"" << "\r\n";
+	objectFile << "%INCLUDE \"Macros_Along.inc\"" << "\r\n";
+
+	emit("SECTION", ".text");
+	emit("global", "_start", "", "; program" + progName);
+	emit("_start:");
 }
