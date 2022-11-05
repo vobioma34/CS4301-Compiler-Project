@@ -519,3 +519,8 @@ void Compiler :: emitPrologue(string progName, string operand2){
 	emit("global", "_start", "", "; program" + progName);
 	emit("_start:");
 }
+void Compiler::emitEpilogue(string operand1, string operand2)
+{
+	emit("", "Exit", "{0}");
+	emitStorage();
+}
