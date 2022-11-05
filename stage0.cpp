@@ -390,3 +390,67 @@ void Compiler :: vars(){
 	}
 }
 
+void Compiler::prog() // token should be "program"
+{
+	if (token != "program") {
+		processError("keyword \"program\" expected");
+	}
+	
+	progStmt();
+	
+	if (token == "const") {
+		consts();
+	}
+	
+	if (token == "var") {
+		vars();
+	}
+	
+	if (token != "begin") {
+		processError("keyword \"begin\" expected");
+	}
+	
+	beginEndStmt();
+	
+	if (token != "end") { // ?
+		processError("no text may follow \"end\"");
+	}
+}
+void Compiler::progStmt() // token should be "program"
+{
+	string x;
+	
+	if (token != "prgram") {
+		processError("keyword \"program\" expected");
+	}
+	
+	x = nextToken();
+	
+	if (!isNonKeyId(token)) {
+		processError("program name expected");
+	}
+	
+	if (nextToken() != ";") {
+		processError("semicolon expected");
+	}
+	
+	nextToken();
+	
+	code("program", x);
+	
+	insert(x, whichType(x), CONSTANT, x, NO, 0);
+}
+void Compiler::beginEndStmt() // token should be "begin" 
+{ 
+	if (token != "begin") {
+		processError("keyword \"begin\" expected");
+	}
+	if (nextToken() != "end") {
+		processError("keyword \"end\" expected");
+	}
+	if (nextToken() != ".") {
+		processError("period expected");
+	}
+	nextToken();
+	code("end", ".");
+}
