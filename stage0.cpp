@@ -575,13 +575,13 @@ void Compiler::emitStorage()
 {
 	emit("SECTION", ".data", "", "");
 	 for (auto it = symbolTable.cbegin(); it != symbolTable.cend(); ++it) {
-		 if (((*it).second.getAlloc() == YES) && ((*it).second.getMode() == CONSTANT)) {
+		 if ((*it).second.getAlloc() == YES && (*it).second.getMode() == CONSTANT) {
 			 emit((*it).second.getInternalName(), to_string((*it).second.getUnits()), (*it).second.getValue(), (";"+(*it).first));
 		 }
 	 }
 	 emit("SECTION", ".bss", "", "");
 	 for (auto it = symbolTable.cbegin(); it != symbolTable.cend(); ++it) {
-		 if (((*it).second.getAlloc() == YES) && ((*it).second.getMode() == VARIABLE)) {
+		 if ((*it).second.getAlloc() == YES && (*it).second.getMode() == VARIABLE) {
 			 emit((*it).second.getInternalName(), to_string((*it).second.getUnits()), (*it).second.getValue(), (";"+(*it).first));
 		 }
 	 }
