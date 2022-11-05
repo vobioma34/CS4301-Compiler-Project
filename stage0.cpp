@@ -120,11 +120,15 @@ string Compiler :: nextToken() {
 	}
 	return token;
 }
-char Compiler::nextChar()
-{
-	//char nextChar; 
+char Compiler :: nextChar(){
+    //char nextChar; 
     //read in next char
     //sourceFile.get(ch);
+
+    lineNo++;
+
+    listingFile << setw(6) << lineNo << "|"; 
+
     if(sourceFile.eof()){
         ch = END_OF_FILE;
     }
