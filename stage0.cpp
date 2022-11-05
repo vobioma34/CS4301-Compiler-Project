@@ -485,3 +485,14 @@ void Compiler :: varStmts(){
 		varStmts();
 	}
 }
+void Compiler::emit(string label, string instruction, string operands, string comment)
+{
+	/*
+	Turn on left justification in objectFile
+	Output label in a field of width 8
+	Output instruction in a field of width 8
+	Output the operands in a field of width 24
+	Output the comment
+	*/
+	objectFile << left << setw(8) << label << setw(8) << instruction << setw(24) << operands << comment << "\r\n";
+}
