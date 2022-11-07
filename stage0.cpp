@@ -6,9 +6,12 @@
 #include <iostream>
 #include <ctime>
 #include <string>
+//#include <array>
+#include <cctype>
 #include <iomanip>
 
 using namespace std;
+
 
 //constructor
 Compiler::Compiler(char **argv) {
@@ -30,17 +33,40 @@ Compiler::~Compiler(){
 
 void Compiler::createListingHeader(){
     time_t result = time(nullptr);
-	listingFile << "STAGE0:" << "Esai Baron and Victor Obioma " << ctime(&result) << endl;
-	listingFile << "LINE NO:" << "SOURCE STATEMENT" << endl;
+	listingFile << "STAGE0:          " << "ESAI BARON VICTOR OBIOMA         " << ctime(&result) << endl;
+	listingFile << "LINE NO.         " << "SOURCE STATEMENT" << "\r\n" << "\r\n";
 }
 
+
+/*---------------------------------------PARSER----------------------------------------------------*/
 //"new int main() - Womack 2022"
 void Compiler::parser() {
-    nextChar();
-    if(nextToken() != "program"){
-	processError("keyword \"program\" expected");
-    }
-    prog();
+    //cout << "sussy balls" << endl;
+	//listingFile << "testing of next char: " << nextChar() << nextChar() << nextChar() << endl;
+	
+	
+	/*
+	cout << isNonKeyId("boolean") << endl;
+	cout << isNonKeyId("stage0no001") << endl;
+	cout << isNonKeyId("true") << endl;
+	cout << isNonKeyId("const") << endl;
+	*/
+
+	/*
+	nextChar();
+	nextToken();
+	*/
+	
+
+	
+	nextChar();
+	nextToken();
+	if(token != "program"){
+		processError("keyword \"program\" expected");
+	}
+	prog();
+	
+	
 }
 
 void Compiler::createListingTrailer(){
@@ -49,7 +75,7 @@ void Compiler::createListingTrailer(){
 
 void Compiler:: processError(string err) {
     //output error to listing file and call exit()
-    listingFile << err;
+    listingFile << err << endl;
     exit(0);
 }
 
@@ -57,56 +83,65 @@ char Compiler :: nextChar(){
     //char nextChar; 
     //read in next char
     //sourceFile.get(ch);
+	
+	sourceFile.get(ch);
     if(sourceFile.eof()){
         ch = END_OF_FILE;
     }
-    else {
-        sourceFile.get(ch);
-    }
+    
+
+	if(ch == '\n'){
+		lineNo++;
+		//listingFile << setw(6) << lineNo << "|";
+	}
     listingFile << ch;
     return ch;
 }
-
+//nees to be fixed
 string Compiler :: nextToken() {
 	token = "";
-	ch = nextChar();
+	//ch = nextChar();
 	while (token == "")
 	{
 		if (ch == '{') { // process comment
-			while (ch != END_OF_FILE || ch != '}') {
-				// Empty body
+			while (ch != END_OF_FILE && ch != '}') {
+				nextChar();
 			}
 			if (ch == END_OF_FILE) {
 				processError("unexpected end of file");
-			} else {
+			} 
+			if(ch == '}') 
 				nextChar();
-			}
 		}
 		else if (ch == '}') {
 			processError("'}' cannot begin token");
 		}
-		else if (isspace(ch) == true) {
+		else if (isspace(ch)) {
 			nextChar();
 		}
-		else if (isSpecialSymbol(ch) == true) {
+		else if (isSpecialSymbol(ch)) {
 			token = ch;
 			nextChar();
 		}
-		else if (islower(ch) == true) {
+		else if (islower(ch)) {
 			token = ch;
+			nextChar();
 			while (((ch == '_') || (isalpha(ch)) || (isdigit(ch))) && (ch != END_OF_FILE)) 
 			{
 				token += ch;
+				nextChar();
 			}
 			if (ch == END_OF_FILE) {
 				processError("unexpected end of file");
 			}
+			//nextChar();
 		}
-		else if (isdigit(ch) == true) {
+		else if (isdigit(ch)) {
 			token = ch;
-			while ((isdigit(ch) == true) && (ch != END_OF_FILE))
+			while ((isdigit(ch)) && (ch != END_OF_FILE))
 			{
 				token += ch;
+				nextChar();
 			}
 			if (ch == END_OF_FILE) {
 				processError("unexpected end of file");
@@ -120,24 +155,6 @@ string Compiler :: nextToken() {
 		}
 	}
 	return token;
-}
-char Compiler :: nextChar(){
-    //char nextChar; 
-    //read in next char
-    //sourceFile.get(ch);
-
-    lineNo++;
-
-    listingFile << setw(6) << lineNo << "|"; 
-
-    if(sourceFile.eof()){
-        ch = END_OF_FILE;
-    }
-    else {
-        sourceFile.get(ch);
-    }
-    listingFile << ch;
-    return ch;
 }
 
 /*----------------------helper functions frompage 4 of pseudo code-----------------*/
@@ -166,42 +183,11 @@ bool Compiler :: isSpecialSymbol(char c) const {
 
     return false; //c is not a special symbol
 }
-
-bool Compiler :: isNonKeyId(string s) const {
-    return !isKeyword(s);
-}
-
-//determines if s is an integer
-bool Compiler :: isInteger(string s) const {
-    if(isdigit(stoi(s))){
-        return true;
-    }
-    else{
-        return false;
-    }
-}
-
-bool Compiler :: isBoolean(string s) const{
-    if (s == "boolean") {
-        return true;
-    }
-    else {
-        return false;
-    }
-}
-
-bool Compiler :: isLiteral(string s) const {
-    if(isBoolean(s) || isInteger(s)){
-		return true;
-	}
-	return false;
-}
-
 //determines if s is a nonKeyid
 bool Compiler :: isNonKeyId(string s) const {
 
 	//make sure s starts with an alpha
-	if(isalpha(s[0]) == false){
+	if(islower(s[0]) == false){
 		return false;
 	}
 	//make sure s is not a keyword
@@ -211,16 +197,14 @@ bool Compiler :: isNonKeyId(string s) const {
 
 	//make sure all chars are lowercase
 	for(uint i = 0; i < s.length(); i++){
-		if(isdigit(s[i]) == false){
-			if(islower(s[i]) == false){
+		if(isdigit(s[i]) == false && islower(s[i]) == false){
 				return false;
-			}
 		}
 	}
 
 	//make sure the 15th character is not an underscore
 	if(s.length() >= 15){
-		if(s[15] == '_'){
+		if(s[14] == '_'){
 			return false;
 		}
 	}
@@ -229,17 +213,52 @@ bool Compiler :: isNonKeyId(string s) const {
 	int uscoreCount = 0;
     for(uint i = 0; i < s.length(); i++){
 		//non key id can have oneunderscore
-		if(s[i] == '_'){
-			uscoreCount++;
-			continue;
+		if(isSpecialSymbol(s[i])){
+			if(s[i] == '_' && uscoreCount < 1){
+				uscoreCount++;
+			}
+			else{
+				return false;
+			}
 		}
+		/*
 		else if(isSpecialSymbol(s[i]) || uscoreCount > 1 || isspace(s[i])){
 			return false;
 		}
+		*/
 	}
 	
 	//dummy return to satify warning
-	return false;
+	return true;
+}
+//determines if s is an integer
+bool Compiler :: isInteger(string s) const {
+	if( s == "integer")
+		return true;
+	for(uint i = 0; i < s.length() - 1; i++){
+		if(!isdigit(s[i]) && s[i] != '-' && s[i] != '+'){
+			return false;
+		}
+	}
+	return true;
+}
+
+bool Compiler :: isBoolean(string s) const{
+	if(s == "boolean")
+		return true;
+    if (s == "true" || s == "false") {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+bool Compiler :: isLiteral(string s) const {
+    if(isBoolean(s) == false && isInteger(s) == false){
+		return false;
+	}
+	return true;
 }
 
 string Compiler::ids()
@@ -254,16 +273,16 @@ string Compiler::ids()
 		if (!isNonKeyId(nextToken())) {
 			processError("non-keyword identifier expected");
 		}
-		tempString = temp;
-		tempString += ",";
-		tempString += ids();
+		tempString = temp + "," + ids();
 	}
 	return tempString;
 }
+
 storeTypes Compiler :: whichType(string name){
 	//will need store types enum called dataType
 	storeTypes dataType;
-
+	cout << token;
+	cout << endl << name << endl;
 	if(isLiteral(name)){
 		if(isBoolean(name)){
 			dataType = BOOLEAN;
@@ -288,7 +307,7 @@ storeTypes Compiler :: whichType(string name){
 
 string Compiler :: whichValue(string name){
 	string value;
-	if(isLiteral(name) == true){
+	if(isLiteral(name)){
 		value = name;
 	}
 	else {
@@ -304,6 +323,7 @@ string Compiler :: whichValue(string name){
 	return value;
 }
 
+//need to finish insert
 void Compiler::insert(string externalName, storeTypes inType, modes inMode, string inValue, allocation inAlloc, int inUnits)
 {
 	string name;
@@ -337,68 +357,72 @@ void Compiler::insert(string externalName, storeTypes inType, modes inMode, stri
 		}
 	}
 }
+
 void Compiler::constStmts() // token should be NON_KEY_ID
 {
 	string x,y;
 	if (!isNonKeyId(token)) {
 		processError("non-keyword identifier expected");
 	}
-	
+
 	x = token;
-	
+
 	if (nextToken() != "=") {
 		processError("\"=\" expected");
 	}
-	
+
 	y = nextToken();
-	
-	if (y != "+" && y != "-" && y != "not" && !isNonKeyId(x) && y != "true" && y != "false" && whichType(y) != INTEGER) {
+	cout << endl << x << endl;
+	cout << y << endl;
+
+	if (y != "+" && y != "-" && y != "not" && !isNonKeyId(y) && y != "true" && y != "false" && whichType(y) != INTEGER) {
 		processError("token to right of \"=\" illegal");
 	}
-	
-	if (y == "+" || y != "-") {
-		
+
+	if (y == "+" || y == "-") {
+
 		if (whichType(nextToken()) != INTEGER) {
 			processError("integer expected after sign");
 		}
-		
+
 		y = y + token;
 	}
-	
+
 	if (y == "not") {
-		
+
 		if (whichType(nextToken()) != BOOLEAN) {
 			processError("boolean expected after \"not\"");
 		}
-		
+
 		if (token == "true") {
 			y = "false";
 		}
-		
+
 		else {
 			y = "true";
 		}
 	}
-	
+
 	if (nextToken() != ";") {
 		processError("semicolon expected");
 	}
-	
-	if (whichType(y) != INTEGER || whichType(y) != BOOLEAN) {
+
+	if (whichType(y) != INTEGER && whichType(y) != BOOLEAN) {
 		processError("data type of token on the right-hand side must be INTEGER or BOOLEAN");
 	}
-	
+
 	insert(x, whichType(y), CONSTANT, whichValue(y), YES, 1);
-	
+
 	x = nextToken();
-	
+
 	if (x != "begin" && x != "var" && !isNonKeyId(x)) {
 		processError("non-keyword identifier, \"begin\", or \"var\" expected");
 	}
-	
-	if (isNonKeyId(x) == true) {
+
+	if (isNonKeyId(x)) {
 		constStmts();
 	}
+
 }
 
 void Compiler :: consts() {
@@ -410,6 +434,7 @@ void Compiler :: consts() {
 	if(isNonKeyId(nextToken()) == false){
 		processError("non-keyword identifier must follow \"const\"");
 	}
+
 	constStmts();
 }
 
@@ -420,20 +445,24 @@ void Compiler :: vars(){
 	if(isNonKeyId(nextToken()) == false){
 		processError("non-keyword identifier must follow \"var\"");
 	}
+	varStmts();
 }
 
 void Compiler::prog() // token should be "program"
 {
+	
 	if (token != "program") {
+	
 		processError("keyword \"program\" expected");
 	}
 	
 	progStmt();
 	
 	if (token == "const") {
+		
 		consts();
 	}
-	
+
 	if (token == "var") {
 		vars();
 	}
@@ -443,26 +472,35 @@ void Compiler::prog() // token should be "program"
 	}
 	
 	beginEndStmt();
-	
-	if (token != "end") { // ?
+	if (token != "$") { // ?
 		processError("no text may follow \"end\"");
 	}
 }
 void Compiler::progStmt() // token should be "program"
 {
+	
 	string x;
 	
-	if (token != "prgram") {
+	if (token != "program") {
+		
 		processError("keyword \"program\" expected");
 	}
 	
+	//cout << token << endl;
 	x = nextToken();
 	
-	if (!isNonKeyId(token)) {
+	//cout << token << endl;
+	
+	if (isNonKeyId(token) == false) {
+		
+		//cout << token << endl;
 		processError("program name expected");
 	}
 	
-	if (nextToken() != ";") {
+	nextToken();
+	//cout << token << endl;
+	if (token != ";") {
+		
 		processError("semicolon expected");
 	}
 	
@@ -470,7 +508,7 @@ void Compiler::progStmt() // token should be "program"
 	
 	code("program", x);
 	
-	insert(x, whichType(x), CONSTANT, x, NO, 0);
+	insert(x, PROG_NAME, CONSTANT, x, NO, 0);
 }
 void Compiler::beginEndStmt() // token should be "begin" 
 { 
@@ -486,6 +524,7 @@ void Compiler::beginEndStmt() // token should be "begin"
 	nextToken();
 	code("end", ".");
 }
+
 void Compiler :: varStmts(){
 	string x, y;
 
@@ -498,7 +537,8 @@ void Compiler :: varStmts(){
 	if(token != ":"){
 		processError("\":\" expected");
 	}
-	if(isInteger(nextToken()) == false && isBoolean(nextToken()) == false){
+	nextToken();
+	if(isInteger(token) == false && isBoolean(token) == false){
 		processError("illegal type follows \":\"");
 	}
 
@@ -509,8 +549,8 @@ void Compiler :: varStmts(){
 	}
 
 	insert(x,whichType(y),VARIABLE,"",YES,1);
-
-	if(nextToken() != "begin" &&  isNonKeyId(nextToken()) == false){
+	nextToken();
+	if(token != "begin" &&  isNonKeyId(token) == false){
 		processError("(non-keyword identifier or \"begin\" expected");
 	}
 	if(isNonKeyId(token)){
@@ -530,6 +570,7 @@ void Compiler :: code(string op, string operand1, string operand2) {
 	}
 }
 
+/*-------------------EMIT FUNCTIONS----------------------------*/
 void Compiler::emit(string label, string instruction, string operands, string comment)
 {
 	/*
@@ -539,24 +580,45 @@ void Compiler::emit(string label, string instruction, string operands, string co
 	Output the operands in a field of width 24
 	Output the comment
 	*/
-	objectFile << left << setw(8) << label << setw(8) << instruction << setw(24) << operands << comment << "\r\n";
+	objectFile << left << setw(8) << label;
+	objectFile << setw(8) << instruction; 
+	objectFile << setw(24) << operands;
+	objectFile << comment << endl;
 }
+
 void Compiler :: emitPrologue(string progName, string operand2){
 	 time_t result = time(nullptr);
-	objectFile << "STAGE0:          " << "Esai Baron and Victor Obioma         " << ctime(&result) << "\r\n";
-	objectFile << "%INCLUDE \"Along32.inc\"" << "\r\n";
-	objectFile << "%INCLUDE \"Macros_Along.inc\"" << "\r\n";
+	objectFile << "; ESAI BARON VICTOR OBIOMA " << ctime(&result) << endl;
+	objectFile << "%INCLUDE \"Along32.inc\"" << endl << "%INCLUDE \"Macros_Along.inc\"" << endl;
 
 	emit("SECTION", ".text");
-	emit("global", "_start", "", "; program" + progName);
+	emit("global", "_start", "", "; program " + progName);
 	emit("_start:");
 }
+
+
 void Compiler::emitEpilogue(string operand1, string operand2)
 {
 	emit("", "Exit", "{0}", "");
 	emitStorage();
 }
-//get emit storage from victor
+
+
+void Compiler::emitStorage()
+{
+	emit("SECTION", ".data", "", "");
+	 for (auto it = symbolTable.cbegin(); it != symbolTable.cend(); ++it) {
+		 if (((*it).second.getAlloc() == YES) && ((*it).second.getMode() == CONSTANT)) {
+			 emit((*it).second.getInternalName(), to_string((*it).second.getUnits()), (*it).second.getValue(), (";"+(*it).first));
+		 }
+	 }
+	 emit("SECTION", ".bss", "", "");
+	 for (auto it = symbolTable.cbegin(); it != symbolTable.cend(); ++it) {
+		 if (((*it).second.getAlloc() == YES) && ((*it).second.getMode() == VARIABLE)) {
+			 emit((*it).second.getInternalName(), to_string((*it).second.getUnits()), (*it).second.getValue(), (";"+(*it).first));
+		 }
+	 }
+}
 
 //these variables are used for genInternalName()
 static int boolCount = 0;
@@ -566,28 +628,13 @@ string Compiler :: genInternalName(storeTypes stype) const{
 	string internalName;
 
 	if(stype == INTEGER){
-		internalName =  "I " + to_string(integerCount);
+		internalName =  "I" + to_string(integerCount);
 		integerCount++;
 	}
 	if(stype == BOOLEAN){
-		internalName = "B " + to_string(boolCount);
+		internalName = "B" + to_string(boolCount);
 		boolCount++;
 	}
 
 	return internalName;
-}
-void Compiler::emitStorage()
-{
-	emit("SECTION", ".data", "", "");
-	 for (auto it = symbolTable.cbegin(); it != symbolTable.cend(); ++it) {
-		 if ((*it).second.getAlloc() == YES && (*it).second.getMode() == CONSTANT) {
-			 emit((*it).second.getInternalName(), to_string((*it).second.getUnits()), (*it).second.getValue(), (";"+(*it).first));
-		 }
-	 }
-	 emit("SECTION", ".bss", "", "");
-	 for (auto it = symbolTable.cbegin(); it != symbolTable.cend(); ++it) {
-		 if ((*it).second.getAlloc() == YES && (*it).second.getMode() == VARIABLE) {
-			 emit((*it).second.getInternalName(), to_string((*it).second.getUnits()), (*it).second.getValue(), (";"+(*it).first));
-		 }
-	 }
 }
