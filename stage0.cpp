@@ -12,6 +12,7 @@
 
 using namespace std;
 
+static bool hasErrorBeenFound = false;
 
 //constructor
 Compiler::Compiler(char **argv) {
@@ -73,12 +74,20 @@ void Compiler::parser() {
 }
 
 void Compiler::createListingTrailer(){
-    listingFile << endl << endl << "COMPILATION TERMINATED" << "# ERRORS ENCOUNTERED" << endl;
+	if(hasErrorBeenFound == true){
+    	listingFile << endl << endl << "COMPILATION TERMINATED   " << "1"  << " ERRORS ENCOUNTERED" << endl;
+	}
+	else {
+		listingFile << endl << endl << "COMPILATION TERMINATED   " << "0"  << " ERRORS ENCOUNTERED" << endl;
+	}
 }
+
+
 
 void Compiler:: processError(string err) {
     //output error to listing file and call exit()
     listingFile << err << endl;
+	hasErrorBeenFound = true;
     exit(0);
 }
 
