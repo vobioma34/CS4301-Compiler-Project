@@ -34,7 +34,7 @@ Compiler::~Compiler(){
 void Compiler::createListingHeader(){
     time_t result = time(nullptr);
 	listingFile << "STAGE0:          " << "ESAI BARON VICTOR OBIOMA         " << ctime(&result) << endl;
-	listingFile << "LINE NO.         " << "SOURCE STATEMENT" << "\r\n" << "\r\n";
+	listingFile << "LINE NO.         " << "SOURCE STATEMENT" << "\r\n";
 }
 
 
@@ -82,19 +82,25 @@ void Compiler:: processError(string err) {
 char Compiler :: nextChar(){
     //char nextChar; 
     //read in next char
-    //sourceFile.get(ch);
+    static bool previousNewLine = true;
+
+	if(previousNewLine == true){
+		lineNo++;
+		listingFile << "\n"<< setw(6) << lineNo << "|";
+	}
 	
 	sourceFile.get(ch);
     if(sourceFile.eof()){
         ch = END_OF_FILE;
     }
-    
 
 	if(ch == '\n'){
+		previousNewLine = true;
 		lineNo++;
-		//listingFile << setw(6) << lineNo << "|";
 	}
+    
     listingFile << ch;
+	previousNewLine = false;
     return ch;
 }
 //nees to be fixed
@@ -138,6 +144,7 @@ string Compiler :: nextToken() {
 		}
 		else if (isdigit(ch)) {
 			token = ch;
+			nextChar();
 			while ((isdigit(ch)) && (ch != END_OF_FILE))
 			{
 				token += ch;
@@ -281,8 +288,8 @@ string Compiler::ids()
 storeTypes Compiler :: whichType(string name){
 	//will need store types enum called dataType
 	storeTypes dataType;
-	cout << token;
-	cout << endl << name << endl;
+	//cout << token;
+	//cout << endl << name << endl;
 	if(isLiteral(name)){
 		if(isBoolean(name)){
 			dataType = BOOLEAN;
@@ -292,10 +299,10 @@ storeTypes Compiler :: whichType(string name){
 		}
 	}
 	else {
-		auto it = symbolTable.find(name);
+		//auto it = symbolTable.find(name);
 
 		if(symbolTable.count(name) == 1){
-			dataType = (*it).second.getDataType();
+			dataType = symbolTable.at(name).getDataType();
 		}
 		else{
 			processError("reference to undefined constant");
@@ -306,7 +313,7 @@ storeTypes Compiler :: whichType(string name){
 }
 
 string Compiler :: whichValue(string name){
-	string value;
+	string value = "hahah";
 	if(isLiteral(name)){
 		value = name;
 	}
@@ -314,7 +321,7 @@ string Compiler :: whichValue(string name){
 		auto it = symbolTable.find(name);
 
 		if(symbolTable.count(name) == 1){
-			value = (*it).second.getDataType();
+			value = (*it).second.getValue();
 		}
 		else{
 			processError("reference to undefined constant");
@@ -372,8 +379,8 @@ void Compiler::constStmts() // token should be NON_KEY_ID
 	}
 
 	y = nextToken();
-	cout << endl << x << endl;
-	cout << y << endl;
+	//cout << endl << x << endl;
+	//cout << y << endl;
 
 	if (y != "+" && y != "-" && y != "not" && !isNonKeyId(y) && y != "true" && y != "false" && whichType(y) != INTEGER) {
 		processError("token to right of \"=\" illegal");
@@ -581,18 +588,19 @@ void Compiler::emit(string label, string instruction, string operands, string co
 	Output the comment
 	*/
 	objectFile << left << setw(8) << label;
-	objectFile << setw(8) << instruction; 
-	objectFile << setw(24) << operands;
-	objectFile << comment << endl;
+	objectFile << left<<setw(8) << instruction; 
+	objectFile << left << setw(24) << operands;
+	objectFile << left << comment << endl;
 }
 
 void Compiler :: emitPrologue(string progName, string operand2){
 	 time_t result = time(nullptr);
-	objectFile << "; ESAI BARON VICTOR OBIOMA " << ctime(&result) << endl;
-	objectFile << "%INCLUDE \"Along32.inc\"" << endl << "%INCLUDE \"Macros_Along.inc\"" << endl;
+	objectFile << "; ESAI BARRON, VICTOR OBIOMA " << ctime(&result);
+	objectFile << "%INCLUDE \"Along32.inc\"" << endl << "%INCLUDE \"Macros_Along.inc\"" << endl << endl;
 
 	emit("SECTION", ".text");
 	emit("global", "_start", "", "; program " + progName);
+	objectFile << endl;
 	emit("_start:");
 }
 
@@ -600,6 +608,7 @@ void Compiler :: emitPrologue(string progName, string operand2){
 void Compiler::emitEpilogue(string operand1, string operand2)
 {
 	emit("", "Exit", "{0}", "");
+	objectFile << endl;
 	emitStorage();
 }
 
@@ -609,13 +618,26 @@ void Compiler::emitStorage()
 	emit("SECTION", ".data", "", "");
 	 for (auto it = symbolTable.cbegin(); it != symbolTable.cend(); ++it) {
 		 if (((*it).second.getAlloc() == YES) && ((*it).second.getMode() == CONSTANT)) {
-			 emit((*it).second.getInternalName(), to_string((*it).second.getUnits()), (*it).second.getValue(), (";"+(*it).first));
+			 //cout << "TESTING VALUE:" << (*it).second.getValue() << endl;
+			 if((*it).second.getValue() == "false" ){
+			 	emit((*it).second.getInternalName(), "dd", "0", ("; "+(*it).first));
+			 }
+			 else if ((*it).second.getValue() == "true"){
+				emit((*it).second.getInternalName(), "dd", "-1", ("; "+(*it).first));
+			 }
+			 else {
+				emit((*it).second.getInternalName(), "dd", (*it).second.getValue(), ("; "+(*it).first));
+
+			 }
 		 }
 	 }
+
+	 objectFile << endl;
+
 	 emit("SECTION", ".bss", "", "");
 	 for (auto it = symbolTable.cbegin(); it != symbolTable.cend(); ++it) {
 		 if (((*it).second.getAlloc() == YES) && ((*it).second.getMode() == VARIABLE)) {
-			 emit((*it).second.getInternalName(), to_string((*it).second.getUnits()), (*it).second.getValue(), (";"+(*it).first));
+			 emit((*it).second.getInternalName(), "resd", "1", ("; "+(*it).first));
 		 }
 	 }
 }
