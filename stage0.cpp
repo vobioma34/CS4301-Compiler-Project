@@ -28,7 +28,7 @@ Compiler::Compiler(char **argv) {
 //destructor
 Compiler::~Compiler(){
     sourceFile.close();
-    listingFile.close(); 
+    listingFile.close();
     objectFile.close();
 }
 
@@ -46,7 +46,6 @@ void Compiler::createListingHeader(){
 /*---------------------------------------PARSER----------------------------------------------------*/
 //"new int main() - Womack 2022"
 void Compiler::parser() {
-    //cout << "sussy balls" << endl;
 	//listingFile << "testing of next char: " << nextChar() << nextChar() << nextChar() << endl;
 	
 	
@@ -112,7 +111,9 @@ char Compiler :: nextChar(){
     }
     else
         listingFile << endl;//need extra line at the bottom
-
+	
+    
+    
     prevCh = ch;
 
 
@@ -147,10 +148,15 @@ string Compiler :: nextToken() {
 		else if (islower(ch)) {
 			token = ch;
 			nextChar();
+			char prevCh = ' ';
 			while (((ch == '_') || (isalpha(ch)) || (isdigit(ch))) && (ch != END_OF_FILE)) 
 			{
+				prevCh = ch;
 				token += ch;
 				nextChar();
+				if (prevCh == '_' && ch == '_') {
+					processError("error '_' must be followed by a letter or number");
+				}
 			}
 			if (ch == END_OF_FILE) {
 				processError("unexpected end of file");
@@ -219,7 +225,7 @@ bool Compiler :: isNonKeyId(string s) const {
 
 	//make sure all chars are lowercase
 	for(uint i = 0; i < s.length(); i++){
-		if(isdigit(s[i]) == false && islower(s[i]) == false){
+		if(isdigit(s[i]) == false && islower(s[i]) == false && s[i] != '_'){
 				return false;
 		}
 	}
