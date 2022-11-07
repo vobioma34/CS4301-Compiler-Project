@@ -35,6 +35,9 @@ void Compiler::createListingHeader(){
     time_t result = time(nullptr);
 	listingFile << "STAGE0:          " << "ESAI BARON VICTOR OBIOMA         " << ctime(&result) << endl;
 	listingFile << "LINE NO.         " << "SOURCE STATEMENT" << "\r\n";
+	lineNo++;
+	listingFile << setw(6) << lineNo << "|";
+
 }
 
 
@@ -70,7 +73,7 @@ void Compiler::parser() {
 }
 
 void Compiler::createListingTrailer(){
-    listingFile << "COMPILATION TERMINATED" << "# ERRORS ENCOUNTERED" << endl;
+    listingFile << endl << endl << "COMPILATION TERMINATED" << "# ERRORS ENCOUNTERED" << endl;
 }
 
 void Compiler:: processError(string err) {
@@ -82,24 +85,27 @@ void Compiler:: processError(string err) {
 char Compiler :: nextChar(){
     //char nextChar; 
     //read in next char
-    static bool previousNewLine = true;
+    static bool previousNewLine = false;
 
-	if(previousNewLine == true){
-		lineNo++;
-		listingFile << "\n"<< setw(6) << lineNo << "|";
-	}
-	
 	sourceFile.get(ch);
     if(sourceFile.eof()){
         ch = END_OF_FILE;
     }
-
+	
 	if(ch == '\n'){
 		previousNewLine = true;
+	}
+
+	if(ch != END_OF_FILE){
+	listingFile << ch;
+	}
+
+	if(previousNewLine == true){
 		lineNo++;
+		listingFile << setw(6) << lineNo << "|";
 	}
     
-    listingFile << ch;
+    
 	previousNewLine = false;
     return ch;
 }
