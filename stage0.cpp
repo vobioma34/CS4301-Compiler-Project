@@ -28,7 +28,7 @@ Compiler::Compiler(char **argv) {
 //destructor
 Compiler::~Compiler(){
     sourceFile.close();
-    listingFile.close();
+    listingFile.close(); 
     objectFile.close();
 }
 
