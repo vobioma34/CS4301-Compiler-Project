@@ -34,10 +34,11 @@ Compiler::~Compiler(){
 
 void Compiler::createListingHeader(){
     time_t result = time(nullptr);
-	listingFile << "STAGE0:          " << "ESAI BARON VICTOR OBIOMA         " << ctime(&result) << endl;
+	listingFile << "STAGE0:          " << "ESAI BARON, VICTOR OBIOMA         " << ctime(&result) << endl;
 	listingFile << "LINE NO.         " << "SOURCE STATEMENT" << "\r\n";
-	lineNo++;
-	listingFile << setw(6) << lineNo << "|";
+	listingFile << endl;
+	//lineNo++;
+	//listingFile << setw(6) << lineNo << "|";
 
 }
 
@@ -75,10 +76,10 @@ void Compiler::parser() {
 
 void Compiler::createListingTrailer(){
 	if(hasErrorBeenFound == true){
-    	listingFile << endl << endl << "COMPILATION TERMINATED   " << "1"  << " ERRORS ENCOUNTERED" << endl;
+    	listingFile << "COMPILATION TERMINATED   " << "1"  << " ERROR ENCOUNTERED" << endl;
 	}
 	else {
-		listingFile << endl << endl << "COMPILATION TERMINATED   " << "0"  << " ERRORS ENCOUNTERED" << endl;
+		listingFile << "COMPILATION TERMINATED   " << "0"  << " ERRORS ENCOUNTERED" << endl;
 	}
 }
 
@@ -86,36 +87,35 @@ void Compiler::createListingTrailer(){
 
 void Compiler:: processError(string err) {
     //output error to listing file and call exit()
-    listingFile << err << endl;
+    listingFile << '\n' << "Error: Line " << lineNo << ": " << err << endl;
+	listingFile << endl;
 	hasErrorBeenFound = true;
+	createListingTrailer();
     exit(0);
 }
 
 char Compiler :: nextChar(){
-    //char nextChar; 
-    //read in next char
-    static bool previousNewLine = false;
-
-	sourceFile.get(ch);
-    if(sourceFile.eof()){
+    sourceFile.get(ch);
+    static char prevCh ='\n';
+ 
+    if(sourceFile.eof()) 
         ch = END_OF_FILE;
+
+    if(ch != '$'){//we don't output the $ or line numbers after that
+        if( prevCh == '\n')
+        {
+            lineNo++;
+            listingFile <<  setw(5) << right<< lineNo << "|";
+        }
+
+        listingFile << ch;
     }
-	
-	if(ch == '\n'){
-		previousNewLine = true;
-	}
+    else
+        listingFile << endl;//need extra line at the bottom
 
-	if(ch != END_OF_FILE){
-	listingFile << ch;
-	}
+    prevCh = ch;
 
-	if(previousNewLine == true){
-		lineNo++;
-		listingFile << setw(6) << lineNo << "|";
-	}
-    
-    
-	previousNewLine = false;
+
     return ch;
 }
 //nees to be fixed
@@ -363,7 +363,7 @@ void Compiler::insert(string externalName, storeTypes inType, modes inMode, stri
 			name = name.substr(0, 15);
 			
 			if (symbolTable.count(name) > 0) {
-				processError("multiple name definition");
+				processError("symbol " + name + " is multiply defined");
 			} else if (isKeyword(name) && name != "true" && name != "false") {
 				processError("illegal use of keyword");
 			} else {
@@ -390,6 +390,12 @@ void Compiler::constStmts() // token should be NON_KEY_ID
 	x = token;
 
 	if (nextToken() != "=") {
+		if (token == ",") {
+			processError("no lists of constants allowed");
+		}
+		if (isNonKeyId(token)) {
+			processError("no spaces in a variable name");
+		}
 		processError("\"=\" expected");
 	}
 
