@@ -34,8 +34,8 @@ Compiler::~Compiler(){
 
 void Compiler::createListingHeader(){
     time_t result = time(nullptr);
-	listingFile << "STAGE0:          " << "ESAI BARON, VICTOR OBIOMA         " << ctime(&result) << endl;
-	listingFile << "LINE NO.         " << "SOURCE STATEMENT" << "\r\n";
+	listingFile << "STAGE0:          " << "ESAI BARRON, VICTOR OBIOMA         " << ctime(&result) << endl;
+	listingFile << "LINE NO.              " << "SOURCE STATEMENT" << "\r\n";
 	listingFile << endl;
 	//lineNo++;
 	//listingFile << setw(6) << lineNo << "|";
@@ -75,10 +75,10 @@ void Compiler::parser() {
 
 void Compiler::createListingTrailer(){
 	if(hasErrorBeenFound == true){
-    	listingFile << "COMPILATION TERMINATED   " << "1"  << " ERROR ENCOUNTERED" << endl;
+    	listingFile << "COMPILATION TERMINATED      " << "1"  << " ERROR ENCOUNTERED" << endl;
 	}
 	else {
-		listingFile << "COMPILATION TERMINATED   " << "0"  << " ERRORS ENCOUNTERED" << endl;
+		listingFile << "COMPILATION TERMINATED      " << "0"  << " ERRORS ENCOUNTERED" << endl;
 	}
 }
 
