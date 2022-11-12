@@ -704,7 +704,16 @@ void Compiler :: execStmts(){
 void Compiler :: pushOperator(string op){
     operatorStk.push(op);
 }
+void Compiler::pushOperand(string name) { // push name into operandStk
 
+	if (isLiteral(name) == true) {
+		symbolTable.insert({ name, SymbolTableEntry(name, whichType(name), CONSTANT, whichValue(name), YES, 1) }); // maybe this works...
+	}
+	if (isLiteral(name) && symbolTable.count(name) == 0) {
+		insert(name, whichType(name), CONSTANT, whichValue(name), YES, 1);
+	}
+	operandStk.push(name);
+}
 string Compiler:: popOperator(){
 
    if(operatorStk.empty() == false){
