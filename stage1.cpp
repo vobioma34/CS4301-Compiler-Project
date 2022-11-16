@@ -727,3 +727,13 @@ string Compiler:: popOperator(){
    //dummy return
    return "";
 }
+string Compiler::popOperand() {
+	if (!operandStk.empty()) {
+		string topElement = operandStk.top();
+		operandStk.pop();
+		return topElement;
+	} else {
+		processError("compiler error; operand stack underflow");
+	}
+	return "";
+}
