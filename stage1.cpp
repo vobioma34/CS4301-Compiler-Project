@@ -737,3 +737,80 @@ string Compiler::popOperand() {
 	}
 	return "";
 }
+
+void Compiler :: part(){
+	if(token == "not"){
+		nextToken();
+		if(token == "("){
+			nextToken();
+			//ADD express() WHEN FINISHED WITH IT
+			nextToken();
+			if(token != ")"){
+				processError("no closing parentheses to match opening.");
+			}
+			code("not", popOperand());
+		}
+		else if(isBoolean(token)){
+			pushOperand(token);
+		} 
+		else if(isNonKeyId(token)){
+			code("not", token);
+		}
+		else{
+			processError("a non boolean operator cannot follow \"not\" goofy");
+		}
+	}
+	else if(token == "+"){
+		nextToken();
+		if(token == "("){
+			nextToken();
+			//ADD express() WHEN FINISHED WITH IT
+			nextToken();
+			if(token != ")"){
+				processError("no closing parentheses to match opening.");
+			}
+			code("not", popOperand());
+		}
+		else if(isInteger(token) || isNonKeyId(token)){
+			pushOperand(token);
+		}
+		else{
+			processError("must have an integer valte after \'+\' GOPFY");
+		}
+	}
+	else if(token == "-"){
+		nextToken();
+		if(token == "("){
+			nextToken();
+			//ADD express() WHEN FINISHED WITH IT
+			nextToken();
+			if(token != ")"){
+				processError("no closing parentheses to match opening.");
+			}
+			code("neg", popOperand());
+		}
+		else if(isInteger(token)){
+			pushOperand("-" + token);
+		}
+		else if(isNonKeyId(token)){
+			code("neg", token);
+		} 
+		else{
+			processError("Integer value must follow \"-\"");
+		}
+	}
+	else if(isInteger(token) || isBoolean(token) || isNonKeyId(token)){
+		pushOperand(token);
+	}
+	else{
+		if(token == "("){
+			nextToken();
+			//ADD express() WHEN FINISHED WITH IT
+			nextToken();
+			if(token != ")"){
+				processError("no closing parentheses to match opening.");
+			}
+		}
+	}
+}
+
