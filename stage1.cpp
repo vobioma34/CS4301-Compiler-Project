@@ -813,4 +813,39 @@ void Compiler :: part(){
 		}
 	}
 }
-
+void Compiler::factors() {
+	if (token == "*" || token == "div" || token == "mod" || token == "and") {
+		pushOperator(token);
+		part();
+	}
+	code(popOperator(), popOperand(), popOperand());
+	factors();
+}
+void Compiler::express() {
+	term();
+	expresses();
+}
+void Compiler::factor() {
+	part();
+	factors();
+}
+void Compiler::term() {
+	factor();
+	terms();
+}
+void Compiler::terms() {
+	if (token == "+" || token == "-" || token == "or") {
+		pushOperator(token);
+		factor();
+	}
+	code(popOperator(), popOperand(), popOperand());
+	terms();
+}
+void Compiler::expresses() {
+	if (token == "=" || token == "<>" || token == "<=" || token == ">=" || token == "<" || token == ">") {
+		pushOperator(token);
+		term();
+	}
+	code(popOperator(), popOperand(), popOperand());
+	expresses();
+}
