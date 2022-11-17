@@ -927,3 +927,64 @@ void Compiler :: execStmts(){
 		processError("are you serious rn bro? 🤨");
 	}
 }
+void Compiler :: emitReadCode(string operand, string operand2) {
+	cout << operand << "    " << operand2 << endl;
+	string name;
+	unsigned int nameOfCurrentList = 0;
+	while (nameOfCurrentList < operand.length()) {
+		name = "";
+		while (name == "") {
+			while (nameOfCurrentList < operand.length() && operand[nameOfCurrentList] != ',') {
+			   name = name + operand[nameOfCurrentList];
+			   nameOfCurrentList = nameOfCurrentList + 1;
+			}
+			
+			nameOfCurrentList += 1;
+			
+			name = name.substr(0, 15);
+			
+			if (symbolTable.count(name) == 0) {
+				processError("reference to undefined symbol");
+			} 
+			else if (isInteger(name) == false) {
+				processError("cannot read varaibles of this type");
+			}
+			else if (symbolTable.at(name).getMode() != VARIABLE){
+				processError("attempting to read to a read-only location");
+			}
+			else{
+				/*
+				objectFile << "call ReadInt" << endl;
+				objectFile << "mov " +  symbolTable.at(name).getInternalName() + ", eax" << endl;
+				*/
+			}
+		}
+	}
+}
+
+//get write code from victor
+
+//op2 = op1
+void Compiler :: emitAssignCode(string operand1, string operand2){
+	if(symbolTable.find(operand1) == symbolTable.end()){
+		processError("refernece to undefined variable");
+	}
+	if(symbolTable.find(operand2) == symbolTable.end()){
+		processError("refernce to undefined variable");
+	}
+	if(operand1 == operand2){
+		return;
+	}
+	if(symbolTable.at(operand2).getMode() != VARIABLE){
+		processError("YOU CANNOT ASSIGN A VALUE TO A NON VARIABLE NON KEY ID");
+	}
+	if(whichType(operand1) != whichType(operand2)){
+		processError("ERROR type mismatch. The operands on either side of \":=\" must be of the same type");
+	}
+	if(contentsOfAReg != operand1){
+		emit("mov eax" + operand1 + "\n");
+		emit("mov " + operand2 + ", " + operand1 + "\n");
+		contentsOfAReg = operand1;
+	}
+
+}
