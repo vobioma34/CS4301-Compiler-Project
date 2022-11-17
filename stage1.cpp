@@ -1055,38 +1055,78 @@ void Compiler :: emitAssignCode(string operand1, string operand2){
 	if(symbolTable.find(operand2) == symbolTable.end()){
 		processError("refernce to undefined variable");
 	}
-	if(operand1 == operand2){
-		return;
-	}
-	if(symbolTable.at(operand2).getMode() != VARIABLE){
-		processError("YOU CANNOT ASSIGN A VALUE TO A NON VARIABLE NON KEY ID");
-	}
+	//make sure types are the same
 	if(whichType(operand1) != whichType(operand2)){
 		processError("ERROR type mismatch. The operands on either side of \":=\" must be of the same type");
 	}
+	//make sure LHS is a variable
+	if(symbolTable.at(operand2).getMode() != VARIABLE){
+		processError("YOU CANNOT ASSIGN A VALUE TO A NON VARIABLE NON KEY ID");
+	}
+	//both operands are the same thing
+	if(operand1 == operand2){
+		return;
+	}
+	//give Areg operand1
 	if(contentsOfAReg != operand1){
-		//emit("mov eax" + operand1 + "\n");
-		emit("", "mov", "eax, " + operand1, ";move contents of variables to eax");
-		//emit("mov " + operand2 + ", " + operand1 + "\n");
-		emit("", "mov", "" + operand2 + "eax", ";move contents of variable into eax");
+		emit("", "mov", "eax,[" + symbolTable.at(operand1).getInternalName() + "]", ";move contents of variables to eax");
 		contentsOfAReg = operand1;
+	}
+	//store contenets of op1(eax) into memeory location(op2)
+	emit("", "mov", "[" + symbolTable.at(operand2).getInternalName() + "], eax", ";move contents of variable into eax");
+	contentsOfAReg = operand2;
+	
+	if(isTemporary(operand1)){
+		freeTemp();
 	}
 
 }
+
 //op2 + op1
 void Compiler :: emitAdditionCode(string operand1, string operand2){
+	/*
 	if(symbolTable.find(operand1) == symbolTable.end()){
 		processError("refernece to undefined variable");
 	}
 	if(symbolTable.find(operand2) == symbolTable.end()){
 		processError("refernce to undefined variable");
 	}
+	*/
 	if(whichType(operand1) != INTEGER || whichType(operand2) != INTEGER){
 		processError("error only integers may be used with \"+\" ");
 	}
-	emit("", "mov ", "ecx, " + operand1, ";move contenets of operand into ecx");
-	emit("", "mov ", "eax, " + operand2, ";move contenets of operand into eax");
-	emit("", "add", "eax, ecx", ";add ecx to eax");
+	//Call is temp
+	if(isTemporary(contentsOfAReg) && contentsOfAReg != operand1 && contentsOfAReg != operand2){
+		emit("", "mov", "[" + contentsOfAReg + "], eax", ";emit code to load operand2 into the A register" );
+		symbolTable.at(contentsOfAReg).setAlloc(YES);
+		contentsOfAReg = "";
+	}
+	if(contentsOfAReg != operand1 && contentsOfAReg != operand2){
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
+		contentsOfAReg = operand2;
+	}
+	//emit code for addition
+	if(contentsOfAReg == operand1){
+		emit("", "add", "eax, [" + operand2 + "]", "; fill this in" );
+	}
+	else {
+		emit("", "add", "eax, [" + operand1 + "]", "; fill this in" );
+	}
+
+	//if operands are temporaroy deassign them
+	if(isTemporary(operand1)){
+		freeTemp();
+	}
+	if(isTemporary(operand2)){
+		freeTemp();
+	}
+	//give a reg the next availbe temp
+	contentsOfAReg = getTemp();
+	//make a reg an integer
+	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
+	
+	pushOperand(contentsOfAReg);
+	
 }
 // op2 -  op1
 void Compiler :: emitSubtractionCode(string operand1, string operand2){
@@ -1118,4 +1158,32 @@ void Compiler:: emitMultiplicationCode(string operand1, string operand2) {
 	emit("", "mov ", "eax, " + operand1, ";move contenets of operand into eax");
 	emit("", "mov ", "ecx, " + operand1, ";move contenets of operand into ecx");
 	emit("", "imul ", "eax, ecx", ";multiply ecx by eax");
+}
+
+/*---------------------------TEMP STUFF -----------------------*/
+void Compiler :: freeTemp(){
+	currentTempNo--;
+	if(currentTempNo < -1){
+		processError("compiler error, current temp should not be less than <= -1");
+	}
+}
+
+string Compiler:: getTemp(){
+	string temp;
+	currentTempNo++;
+	temp = "T" + currentTempNo;
+	if (currentTempNo > maxTempNo){
+		insert(temp, UNKNOWN, VARIABLE, "", NO, 1);
+	}
+	maxTempNo++;
+	return temp;
+}
+
+bool Compiler :: isTemporary(string s) const {
+	if(s[0] == 'T'){
+		return true;
+	} 
+	else {
+		return false;
+	}
 }
