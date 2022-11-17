@@ -1019,3 +1019,49 @@ void Compiler :: emitAssignCode(string operand1, string operand2){
 	}
 
 }
+//op2 + op1
+void Compiler :: emitAdditionCode(string operand1, string operand2){
+	if(symbolTable.find(operand1) == symbolTable.end()){
+		processError("refernece to undefined variable");
+	}
+	if(symbolTable.find(operand2) == symbolTable.end()){
+		processError("refernce to undefined variable");
+	}
+	if(whichType(operand1) != INTEGER || whichType(operand2) != INTEGER){
+		processError("error only integers may be used with \"+\" ");
+	}
+	emit("", "mov ", "ecx, " + operand1, ";move contenets of operand into ecx");
+	emit("", "mov ", "eax, " + operand2, ";move contenets of operand into eax");
+	emit("", "add", "eax, ecx", ";add ecx to eax");
+}
+// op2 -  op1
+void Compiler :: emitSubtractionCode(string operand1, string operand2){
+	if(symbolTable.find(operand1) == symbolTable.end()){
+		processError("refernece to undefined variable");
+	}
+	if(symbolTable.find(operand2) == symbolTable.end()){
+		processError("refernce to undefined variable");
+	}
+	if(whichType(operand1) != INTEGER || whichType(operand2) != INTEGER){
+		processError("error only integers may be used with \"-\" ");
+	}
+	emit("", "mov ", "ecx, " + operand1, ";move contenets of operand into ecx");
+	emit("", "mov ", "eax, " + operand2, ";move contenets of operand into eax");
+	emit("", "sub", "eax, ecx", ";sub ecx from eax");
+}
+
+//get help on this!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+void Compiler:: emitMultiplicationCode(string operand1, string operand2) {
+	if(symbolTable.find(operand1) == symbolTable.end()){
+		processError("refernece to undefined variable");
+	}
+	if(symbolTable.find(operand2) == symbolTable.end()){
+		processError("refernce to undefined variable");
+	}
+	if(whichType(operand1) != INTEGER || whichType(operand2) != INTEGER){
+		processError("error only integers may be used with \"-\" ");
+	}
+	emit("", "mov ", "eax, " + operand1, ";move contenets of operand into eax");
+	emit("", "mov ", "ecx, " + operand1, ";move contenets of operand into ecx");
+	emit("", "mul ", "eax, ecx", ";multiply ecx by eax");
+}
