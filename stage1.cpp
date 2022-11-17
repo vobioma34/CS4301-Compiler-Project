@@ -957,6 +957,8 @@ void Compiler :: emitReadCode(string operand, string operand2) {
 				objectFile << "call ReadInt" << endl;
 				objectFile << "mov " +  symbolTable.at(name).getInternalName() + ", eax" << endl;
 				*/
+				emit("", "call", "ReadInt", ";call to ReadInt function");
+				emit("", "mov", operand + ", eax", "move contenets of a Register to variable" );
 			}
 		}
 	}
@@ -990,6 +992,7 @@ void Compiler :: emitWriteCode(string operand, string operand2) {
 	}
 }
 //op2 = op1
+//op2 = op1
 void Compiler :: emitAssignCode(string operand1, string operand2){
 	if(symbolTable.find(operand1) == symbolTable.end()){
 		processError("refernece to undefined variable");
@@ -1007,8 +1010,10 @@ void Compiler :: emitAssignCode(string operand1, string operand2){
 		processError("ERROR type mismatch. The operands on either side of \":=\" must be of the same type");
 	}
 	if(contentsOfAReg != operand1){
-		emit("mov eax" + operand1 + "\n");
-		emit("mov " + operand2 + ", " + operand1 + "\n");
+		//emit("mov eax" + operand1 + "\n");
+		emit("", "mov", "eax, " + operand1, ";move contents of variables to eax");
+		//emit("mov " + operand2 + ", " + operand1 + "\n");
+		emit("", "mov", "" + operand2 + "eax", ";move contents of variable into eax");
 		contentsOfAReg = operand1;
 	}
 
