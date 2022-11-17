@@ -864,7 +864,7 @@ void Compiler :: writeStmt(){
 			}
 			code("write", token);
 		}
-		else if(token != ";"){
+		if(token != ";"){
 			processError("Error. Expected \";\"");
 		}
 	} 
@@ -884,7 +884,7 @@ void Compiler :: readStmt(){
 			}
 			code("read", token);
 		}
-		else if(token != ";"){
+		if(token != ";"){
 			processError("Error. Expected \";\"");
 		}
 	}
@@ -892,3 +892,23 @@ void Compiler :: readStmt(){
 		processError("Expected keyword \"read\" ");
 	}
 }
+
+void Compiler :: assignStmt(){
+	if(isNonKeyId(token)){
+		pushOperand(token);
+		nextToken();
+		if(token == ":="){
+			pushOperator(":=");
+			express();
+		}
+		nextToken();
+		if(token != ";"){
+			processError("Error \";\" expected");
+		}
+		code("read", token);
+	} 
+	else {
+		processError("NonKeyID epxected before \":=\" ");
+	}
+}
+
