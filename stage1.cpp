@@ -600,7 +600,61 @@ void Compiler :: code(string op, string operand1, string operand2) {
 	else if(op == "end"){
 		emitEpilogue();
 	}
-	else{
+	else if (op == "read") {
+		emitReadCode(operand1, operand2);
+	}
+	else if (op == "write") {
+		emitWriteCode(operand1, operand2);
+	}
+	else if (op == "+") { // this must be binary '+'
+		// call to the emitAdditionCode() function
+	}
+	else if (op == "-") { // this must be binary '-'
+		// call to the emitSubtractionCode() function
+	}
+	else if (op == "neg") { // this must be unary '-'
+		// call to the emitNegationCode() function
+	}
+	else if (op == "not") {
+		// call to the emitNotCode() function
+	}
+	else if (op == "*") {
+		// call to the emitMultiplicationCode() function
+	}
+	else if (op == "div") {
+		// call to the emitDivisionCode() function
+	}
+	else if (op == "mod") {
+		// call to the emitModuloCode() function
+	} 
+	else if (op == "and") {
+		// call to the emitAndCode() function
+	}
+	else if (op == "or") {
+		// call to the emitOrCode() function
+	}
+	else if (op == "=") {
+		// call to the emitEqualityCode() function
+	}
+	else if (op == ":=") {
+		emitAssignCode(operand1, operand2);
+	}
+	else if (op == "<>") {
+		// call to the emitInequalityCode() function
+	}
+	else if (op == "<") {
+		// call to the emitLessThanCode() function
+	}
+	else if (op == "<=") {
+		// call to the emitLessThanOrEqualToCode() function
+	}
+	else if (op == ">") {
+		// call to the emitGreaterThanCode() function
+	}
+	else if (op == ">=") {
+		// call to the emitGreaterThanOrEqualCode() function
+	}
+	else {
 		processError("compiler error since function code should not be called with illegal arguments");
 	}
 }
@@ -1063,5 +1117,5 @@ void Compiler:: emitMultiplicationCode(string operand1, string operand2) {
 	}
 	emit("", "mov ", "eax, " + operand1, ";move contenets of operand into eax");
 	emit("", "mov ", "ecx, " + operand1, ";move contenets of operand into ecx");
-	emit("", "mul ", "eax, ecx", ";multiply ecx by eax");
+	emit("", "imul ", "eax, ecx", ";multiply ecx by eax");
 }
