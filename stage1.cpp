@@ -959,6 +959,7 @@ void Compiler :: emitReadCode(string operand, string operand2) {
 				*/
 				emit("", "call", "ReadInt", ";call to ReadInt function");
 				emit("", "mov", operand + ", eax", "move contenets of a Register to variable" );
+				contentsOfAReg = name;
 			}
 		}
 	}
