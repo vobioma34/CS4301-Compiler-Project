@@ -912,3 +912,25 @@ void Compiler :: assignStmt(){
 	}
 }
 
+void Compiler :: execStmt(){
+	if(token == "read"){
+		readStmt();
+	}
+	else if(token == "write"){
+		writeStmt();
+	}
+	else if (isNonKeyId(token) && nextToken() == ":="){
+		assignStmt();
+	}
+}
+
+void Compiler :: execStmts(){
+	if(isNonKeyId(token) || token == "read" || token == "write"){
+		execStmt();
+		nextToken();
+		execStmts();
+	}
+	else if(token == "end"){
+		processError("are you serious rn bro? 🤨");
+	}
+}
