@@ -693,13 +693,6 @@ string Compiler :: genInternalName(storeTypes stype) const{
 }
 
 /*----------------------- NEW STUFF FOR STAGE1 ----------------------*/
-void Compiler :: execStmt(){
-
-}
-
-void Compiler :: execStmts(){
-
-}
 
 void Compiler :: pushOperator(string op){
     operatorStk.push(op);
