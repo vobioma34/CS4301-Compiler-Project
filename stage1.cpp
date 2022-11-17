@@ -849,3 +849,23 @@ void Compiler::expresses() {
 	code(popOperator(), popOperand(), popOperand());
 	expresses();
 }
+
+
+//Ask about production 8, WRITE_LIST, 
+void Compiler :: writeStmt(){
+	if (token == "write"){
+		//do we need write list??
+		nextToken();
+		if(token == "("){
+			ids();
+			nextToken();
+			if(token != ")"){
+				processError("Error expected \")\"");
+			}
+			code("write", token);
+		}
+		if(token != ";"){
+			processError("Error. Expected \";\"");
+		}
+	}
+}
