@@ -963,7 +963,32 @@ void Compiler :: emitReadCode(string operand, string operand2) {
 }
 
 //get write code from victor
-
+void Compiler :: emitWriteCode(string operand, string operand2) {
+	string name;
+	unsigned int nameOfCurrentOperand = 0;
+	while(nameOfCurrentOperand < operand.length()) {
+		name = "";
+		while(name == "") {
+			while(nameOfCurrentOperand < operand.length() && operand[nameOfCurrentOperand] != ',') {
+				name = name + operand[nameOfCurrentOperand];
+				nameOfCurrentOperand = nameOfCurrentOperand + 1;
+			}
+			nameOfCurrentOperand += 1;
+			name = name.substr(0, 15);
+			
+			if (symbolTable.count(name) == 0) {
+				processError("reference to undefined symbol");
+			}
+			else if (name != contentsOfAReg) {
+				emit("", "mov", "[" + symbolTable.at(name).getInternalName() + "], " + "eax", "; load name in the A register");
+				contentsOfAReg = name;
+			} else if (isInteger(name) == true || isBoolean(name) == true) {
+				emit("", "call", "WriteInt", "; call the Irvine WriteInt function");
+			}
+			emit("", "call", "CrLf", "; call the Irvine CrLf function");
+		}		
+	}
+}
 //op2 = op1
 void Compiler :: emitAssignCode(string operand1, string operand2){
 	if(symbolTable.find(operand1) == symbolTable.end()){
