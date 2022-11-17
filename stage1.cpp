@@ -864,8 +864,31 @@ void Compiler :: writeStmt(){
 			}
 			code("write", token);
 		}
-		if(token != ";"){
+		else if(token != ";"){
 			processError("Error. Expected \";\"");
 		}
+	} 
+	else{
+		processError("Expected keyword \"write\"");
+	}
+}
+
+void Compiler :: readStmt(){
+	if(token == "read"){
+		nextToken();
+		if(token == "("){
+			ids();
+			nextToken(); 
+			if(token != ")"){
+				processError("Error. Expected \")\" ");
+			}
+			code("read", token);
+		}
+		else if(token != ";"){
+			processError("Error. Expected \";\"");
+		}
+	}
+	else{
+		processError("Expected keyword \"read\" ");
 	}
 }
