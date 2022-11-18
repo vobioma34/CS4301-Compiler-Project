@@ -1130,18 +1130,39 @@ void Compiler :: emitAdditionCode(string operand1, string operand2){
 }
 // op2 -  op1
 void Compiler :: emitSubtractionCode(string operand1, string operand2){
-	if(symbolTable.find(operand1) == symbolTable.end()){
-		processError("refernece to undefined variable");
-	}
-	if(symbolTable.find(operand2) == symbolTable.end()){
-		processError("refernce to undefined variable");
-	}
 	if(whichType(operand1) != INTEGER || whichType(operand2) != INTEGER){
-		processError("error only integers may be used with \"-\" ");
+		processError("error only integers may be used with \"+\" ");
 	}
-	emit("", "mov ", "ecx, " + operand1, ";move contenets of operand into ecx");
-	emit("", "mov ", "eax, " + operand2, ";move contenets of operand into eax");
-	emit("", "sub", "eax, ecx", ";sub ecx from eax");
+	//Call is temp
+	if(isTemporary(contentsOfAReg) && contentsOfAReg != operand1 && contentsOfAReg != operand2){
+		emit("", "mov", "[" + contentsOfAReg + "], eax", ";emit code to load operand2 into the A register" );
+		symbolTable.at(contentsOfAReg).setAlloc(YES);
+		contentsOfAReg = "";
+	}
+	if(contentsOfAReg != operand1 && contentsOfAReg != operand2){
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
+		contentsOfAReg = operand2;
+	}
+	//emit code for subtraction
+	if(contentsOfAReg == operand1){
+		emit("", "sub", "eax, [" + operand1 + "]", "; fill this in" );
+	}
+	
+
+	//if operands are temporaroy deassign them
+	if(isTemporary(operand1)){
+		freeTemp();
+	}
+	if(isTemporary(operand2)){
+		freeTemp();
+	}
+	//give a reg the next availbe temp
+	contentsOfAReg = getTemp();
+	//make a reg an integer
+	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
+	
+	pushOperand(contentsOfAReg);
+	
 }
 
 //get help on this!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
