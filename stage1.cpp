@@ -1180,7 +1180,47 @@ void Compiler:: emitMultiplicationCode(string operand1, string operand2) {
 	emit("", "mov ", "ecx, " + operand1, ";move contenets of operand into ecx");
 	emit("", "imul ", "eax, ecx", ";multiply ecx by eax");
 }
-
+void Compiler :: emitDivisionCode(string operand1, string operand2) {
+	if (whichType(operand1) != INTEGER || whichType(operand2) != INTEGER) {
+		processError("illegal type");
+	}
+	// emit code to store that temp into memory
+    // change the allocate entry for it in the symbol table to yes
+	// deassign it
+	if (isTemporary(contentsOfAReg) && contentsOfAReg != operand2) {
+		emit("", "mov", "[" + contentsOfAReg + "], eax", "; store that temp into memory");
+		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
+		contentsOfAReg = "";
+	}
+	// emit instruction to do a register-memory load of operand2 into the A register
+	// operand2 is not in the A register
+	if (isTemporary(contentsOfAReg) == false && contentsOfAReg != operand2) { // maybe incorrect
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
+		contentsOfAReg = operand2;
+	}
+	// emit code to extend sign of dividend from the A register to edx:eax
+    // still need to write this line(s) of code...
+	
+	// emit code to perform a register-memory division
+	if (contentsOfAReg == operand1) {
+		emit("", "div", "eax, [" + operand1 + "]", "; fill this in" );
+	}
+	
+	//if operands are temporaroy deassign them
+	if(isTemporary(operand1)){
+		freeTemp();
+	}
+	if(isTemporary(operand2)){
+		freeTemp();
+	}
+	//give a reg the next availbe temp
+	contentsOfAReg = getTemp();
+	//make a reg an integer
+	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
+	
+	pushOperand(contentsOfAReg); // push it to the stack
+	
+}
 /*---------------------------TEMP STUFF -----------------------*/
 void Compiler :: freeTemp(){
 	currentTempNo--;
