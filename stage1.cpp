@@ -1338,11 +1338,38 @@ void Compiler :: emitAndCode(string operand1, string operand2){
 	if(whichType(operand1) != BOOLEAN || whichType(operand2) != BOOLEAN){
 		processError("error only booleans may be used with \"and\" ");
 	}
-	else{
-		emit("", "mov ", "eax, [" + operand1 +"]", ";Areg  = " + operand1 );
+	if(isTemporary(contentsOfAReg) && contentsOfAReg != operand1 && contentsOfAReg != operand2){
+		emit("", "mov", "[" + contentsOfAReg + "], eax", ";emit code to load operand2 into the A register" );
+		symbolTable.at(contentsOfAReg).setAlloc(YES);
+		contentsOfAReg = "";
+	}
+	if(contentsOfAReg != operand1 && contentsOfAReg != operand2){
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
+		contentsOfAReg = operand2;
+	}
+	if(contentsOfAReg == operand1){
 		emit("", "and ", "eax, [" + operand2 + "]", ";" + contentsOfAReg + "and " + operand2);
 	}
+	else{
+		//emit("", "mov ", "eax, [" + operand1 +"]", ";Areg  = " + operand1 );
+		emit("", "and ", "eax, [" + operand1 + "]", ";" + contentsOfAReg + "and " + operand2);
+	}
+
+	//if operands are temporaroy deassign them
+	if(isTemporary(operand1)){
+		freeTemp();
+	}
+	if(isTemporary(operand2)){
+		freeTemp();
+	}
+	//give a reg the next availbe temp
+	contentsOfAReg = getTemp();
+	//make a reg an integer
+	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
+	
+	pushOperand(contentsOfAReg);
 }
+
 
 void Compiler :: emitEqualityCode(string operand1, string operand2){
 	if(whichType(operand1) != whichType(operand2)){
