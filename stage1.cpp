@@ -1315,3 +1315,43 @@ bool Compiler :: isTemporary(string s) const {
 		return false;
 	}
 }
+
+void Compiler :: emitNegationCode(string operand1, string nothing){
+	if(whichType(operand1) == INTEGER){
+		emit("", "neg ", "eax", "; AReg = -AReg");
+	}
+	else {
+		processError("\'-\' may only be used on type INTEGER");
+	}
+}
+
+void Compiler :: emitNotCode(string operand1, string nothing){
+	if(whichType(operand1) == BOOLEAN){
+		emit("", "not ", "eax", "; AReg = -AReg");
+	}
+	else {
+		processError("\"not\" may only be used on type BOOLEAN");
+	}
+}
+
+void Compiler :: emitAndCode(string operand1, string operand2){
+	if(whichType(operand1) != BOOLEAN || whichType(operand2) != BOOLEAN){
+		processError("error only booleans may be used with \"and\" ");
+	}
+	else{
+		emit("", "mov ", "eax, [" + operand1 +"]", ";Areg  = " + operand1 );
+		emit("", "and ", "eax, [" + operand2 + "]", ";" + contentsOfAReg + "and " + operand2);
+	}
+}
+
+void Compiler :: emitEqualityCode(string operand1, string operand2){
+	if(whichType(operand1) != whichType(operand2)){
+		processError("\"=\" must be used with matching datat types for both operands");
+	}
+	else {
+		contentsOfAReg = operand1;
+		emit("", "mov ", "eax, [" + operand1 +"]", ";Areg  = " + operand1 );
+		emit("", "cmp ", "eax, [" + operand2 + "]", ";compare" + operand1 + "and" + operand2);
+	}
+	contentsOfAReg = "";
+}
