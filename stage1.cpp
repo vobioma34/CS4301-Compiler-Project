@@ -1221,6 +1221,73 @@ void Compiler :: emitDivisionCode(string operand1, string operand2) {
 	pushOperand(contentsOfAReg); // push it to the stack
 	
 }
+void Compiler :: emitModuloCode(string operand1, string operand2) {
+	// emit code to store that temp into memory
+    // change the allocate entry for it in the symbol table to yes
+	// deassign it
+	if (isTemporary(contentsOfAReg) && contentsOfAReg != operand2) {
+		emit("", "mov", "[" + contentsOfAReg + "], eax", "; store that temp into memory");
+		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
+		contentsOfAReg = "";
+	}
+	// emit instruction to do a register-memory load of operand2 into the A register
+	// operand2 is not in the A register
+	if (isTemporary(contentsOfAReg) == false && contentsOfAReg != operand2) { // maybe incorrect
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
+		contentsOfAReg = operand2;
+	}
+	
+	// emit code to perform a register-memory modular 
+	if (contentsOfAReg == operand1) {
+		emit("", "div", "[" + operand1 + "]", "; fill this in" ); // maybe?
+	}
+	
+	//if operands are temporaroy deassign them
+	if(isTemporary(operand1)){
+		freeTemp();
+	}
+	if(isTemporary(operand2)){
+		freeTemp();
+	}
+	//give a reg the next availbe temp
+	contentsOfAReg = getTemp();
+	//make a reg an integer
+	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
+	
+	pushOperand(contentsOfAReg); // push it to the stack
+}
+void Compiler :: emitOrCode(string operand1, string operand2) {
+	if (whichType(operand1) != BOOLEAN || whichType(operand2) != BOOLEAN) {
+		processError("illegal type");
+	}
+	if (isTemporary(contentsOfAReg) && contentsOfAReg != operand1 && contentsOfAReg != operand2) {
+		emit("", "mov", "[" + contentsOfAReg + "], eax", "; store that temp into memory");
+		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
+		contentsOfAReg = "";
+	}
+	if (isTemporary(contentsOfAReg) == false && contentsOfAReg != operand1 && contentsOfAReg != operand2) {
+		contentsOfAReg = ""; // deassign it
+	}
+	if (contentsOfAReg != operand1 || contentsOfAReg != operand2) {
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
+	}
+	if (contentsOfAReg == operand1) {
+		emit("", "OR", "eax, [" + symbolTable.at(operand2).getInternalName() + "]", "; fill this in");
+	}
+	//if operands are temporaroy deassign them
+	if(isTemporary(operand1)){
+		freeTemp();
+	}
+	if(isTemporary(operand2)){
+		freeTemp();
+	}
+	//give a reg the next availbe temp
+	contentsOfAReg = getTemp();
+	//make a reg an integer
+	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
+	
+	pushOperand(contentsOfAReg); // push it to the stack
+}
 /*---------------------------TEMP STUFF -----------------------*/
 void Compiler :: freeTemp(){
 	currentTempNo--;
