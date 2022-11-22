@@ -1420,3 +1420,59 @@ void Compiler :: emitEqualityCode(string operand1, string operand2){
 	
 	pushOperand(contentsOfAReg); // push it to the stack
 }
+void Compiler :: emitInequalityCode(string operand1, string operand2) {
+	string label1, label2;
+	label1 = getLabel();
+	label2 = getLabel();
+	// types of operands are not the same
+	if (whichType(operand1) != whichType(operand2)) {
+		processError("incompatible types");
+	}
+	// if the A Register holds a temp not operand1 nor operand2
+	if (isTemporary(contentsOfAReg) && (contentsOfAReg != operand1 || contentsOfAReg != operand2)) {
+		emit("", "mov", "[" + contentsOfAReg + "], eax", "; store that temp into memory"); // store the temp into memory
+		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
+		contentsOfAReg = ""; // deassign it
+	}
+	// if the A register holds a non-temp not operand2 nor operand1
+	if (isTemporary(contentsOfAReg) == false && (contentsOfAReg != operand1 || contentsOfAReg != operand2)) {
+		contentsOfAReg = ""; // deassign it
+	}
+	if (contentsOfAReg != operand1 && contentsOfAReg != operand2) {
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax"); // load operand2 into the A register
+	}
+	emit("", "cmp", "eax, [" + symbolTable.at(operand1).getInternalName() + "]","; fill this in"); // perform a register-memory compare
+	emit("", "jne", label1, ""); // jump if equal to the next available Ln (call getLabel)
+	emit("", "mov", "eax, [FALSE]", "; load FALSE"); //  load FALSE into the A register
+	emit("", "jmp", label2, "; unconditional jump"); // perform an unconditional jump to the next label (call getLabel should be L(n+1))
+	emit(label1, "", "", ""); // emit code to label the next instruction with the first acquired label Ln
+	emit("", "mov", "eax, [TRUE]", "; load TRUE"); //  load TRUE into the A register
+	emit(label2, "", "", "");
+	// inserting true and false into the symbol table
+	if (symbolTable.count("true") == 0) {
+		symbolTable.insert({ "true", SymbolTableEntry("TRUE", BOOLEAN, CONSTANT, "-1", YES, 1) });
+	}
+	if (symbolTable.count("false") == 0) {
+		symbolTable.insert({ "false", SymbolTableEntry("FALSE", BOOLEAN, CONSTANT, "0", YES, 1) });
+	}
+	//if operands are temporaroy deassign them
+	if(isTemporary(operand1)){
+		freeTemp();
+	}
+	if(isTemporary(operand2)){
+		freeTemp();
+	}
+	//give a reg the next availbe temp
+	contentsOfAReg = getTemp();
+	//make a reg an integer
+	symbolTable.at(contentsOfAReg).setDataType(BOOLEAN);
+	
+	pushOperand(contentsOfAReg); // push it to the stack
+}
+string Compiler::getLabel() {
+	static int labelCount = -1;
+	string currentLabel;
+	labelCount++; // increment the number of labels by 1
+	currentLabel = ".L" + to_string(labelCount);
+	return currentLabel; // Return the current label
+}
