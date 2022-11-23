@@ -1,6 +1,6 @@
 //Esai Barron and Victor Obioma
 //CS 4301
-//Stage 0
+//Stage 1
 
 #include <stage1.h>
 #include <iostream>
@@ -61,13 +61,20 @@ void Compiler::parser() {
 	*/
 	
 
-	
 	nextChar();
-	nextToken();
+	
+
+	while(hasErrorBeenFound == false){
+		cout << token << endl;
+		
+		nextToken();
+	}
+
 	if(token != "program"){
 		processError("keyword \"program\" expected");
 	}
 	prog();
+	
 	
 	
 }
@@ -118,9 +125,10 @@ char Compiler :: nextChar(){
 
     return ch;
 }
+
+//need to be fixed
 string Compiler :: nextToken() {
 	token = "";
-	//ch = nextChar();
 	while (token == "")
 	{
 		if (ch == '{') { // process comment
@@ -213,7 +221,7 @@ string Compiler :: nextToken() {
 //determines if s is a keyword, true if s is a keyword and false otherwise
 bool Compiler :: isKeyword(string s) const{
     string keywords[] = {"program", "const", "var", "integer", "boolean", 
-                            "begin", "end", "true", "false", "not"};
+                            "begin", "end", "true", "false", "not", "and", "or"};
 
     //go through keywords array and see if s matches nay key words
     for(int i = 0; i < 10; i++){ //change hardcoded 10 and ask Dr.Motl
@@ -573,14 +581,14 @@ void Compiler::beginEndStmt() // token should be "begin"
 	if (token != "begin") {
 		processError("keyword \"begin\" expected");
 	}
+	execStmts();
 	if (nextToken() != "end") {
 		processError("keyword \"end\" expected");
 	}
 	if (nextToken() != ".") {
 		processError("period expected");
 	}
-    //add code for EXEC_STMT
-
+    
 	nextToken();
 	code("end", ".");
 }
@@ -617,7 +625,7 @@ void Compiler :: varStmts(){
 		varStmts();
 	}
 }
-
+//come back to this and add cuntion calls for emit
 void Compiler :: code(string op, string operand1, string operand2) {
 	if(op == "program"){
 		emitPrologue(operand1);
@@ -633,51 +641,66 @@ void Compiler :: code(string op, string operand1, string operand2) {
 	}
 	else if (op == "+") { // this must be binary '+'
 		// call to the emitAdditionCode() function
+		emitAdditionCode(operand1, operand2);
 	}
 	else if (op == "-") { // this must be binary '-'
 		// call to the emitSubtractionCode() function
+		emitSubtractionCode(operand1, operand2);
 	}
 	else if (op == "neg") { // this must be unary '-'
 		// call to the emitNegationCode() function
+		emitNegationCode(operand1, operand2);
 	}
 	else if (op == "not") {
 		// call to the emitNotCode() function
+		emitNotCode(operand1, operand2);
 	}
 	else if (op == "*") {
 		// call to the emitMultiplicationCode() function
+		emitMultiplicationCode(operand1, operand2);
 	}
 	else if (op == "div") {
 		// call to the emitDivisionCode() function
+		emitDivisionCode(operand1, operand2);
 	}
 	else if (op == "mod") {
 		// call to the emitModuloCode() function
+		emitModuloCode(operand1, operand2);
 	} 
 	else if (op == "and") {
 		// call to the emitAndCode() function
+		emitAndCode(operand1, operand2);
 	}
 	else if (op == "or") {
 		// call to the emitOrCode() function
+		emitOrCode(operand1, operand2);
 	}
 	else if (op == "=") {
 		// call to the emitEqualityCode() function
+		emitEqualityCode(operand1, operand2);
 	}
 	else if (op == ":=") {
 		emitAssignCode(operand1, operand2);
 	}
 	else if (op == "<>") {
 		// call to the emitInequalityCode() function
+		emitInequalityCode(operand1, operand2);
 	}
 	else if (op == "<") {
 		// call to the emitLessThanCode() function
+		emitLessThanCode(operand1, operand2);
 	}
 	else if (op == "<=") {
 		// call to the emitLessThanOrEqualToCode() function
+		emitLessThanOrEqualToCode(operand1, operand2);
 	}
 	else if (op == ">") {
-		// call to the emitGreaterThanCode() function
+		// call to the emitGreaterThanCode() function, get these from victor
+		emitGreaterThanCode(operand1, operand2);
 	}
 	else if (op == ">=") {
-		// call to the emitGreaterThanOrEqualCode() function
+		// call to the emitGreaterThanOrEqualCode() function, get these from victor
+		emitGreaterThanOrEqualToCode(operand1, operand2);
 	}
 	else {
 		processError("compiler error since function code should not be called with illegal arguments");
@@ -773,9 +796,7 @@ string Compiler :: genInternalName(storeTypes stype) const{
 
 /*----------------------- NEW STUFF FOR STAGE1 ----------------------*/
 
-void Compiler :: pushOperator(string op){
-    operatorStk.push(op);
-}
+/* --------------- PUSH AND POP OPERTAIONS ----------------------- */
 void Compiler::pushOperand(string name) { // push name into operandStk
 
 	if (isLiteral(name) == true) {
@@ -786,6 +807,22 @@ void Compiler::pushOperand(string name) { // push name into operandStk
 	}
 	operandStk.push(name);
 }
+string Compiler::popOperand() {
+	if (!operandStk.empty()) {
+		string topElement = operandStk.top();
+		operandStk.pop();
+		return topElement;
+	} else {
+		processError("compiler error; operand stack underflow");
+	}
+	return "";
+}
+
+//fix this for edge case, when you get something thst is already in the symbol table
+void Compiler :: pushOperator(string op){
+    operatorStk.push(op);
+}
+
 string Compiler:: popOperator(){
 
    if(operatorStk.empty() == false){
@@ -799,23 +836,15 @@ string Compiler:: popOperator(){
    //dummy return
    return "";
 }
-string Compiler::popOperand() {
-	if (!operandStk.empty()) {
-		string topElement = operandStk.top();
-		operandStk.pop();
-		return topElement;
-	} else {
-		processError("compiler error; operand stack underflow");
-	}
-	return "";
-}
+
+/* -------------------- END OF PUSH AND POP ---------------------------*/
 
 void Compiler :: part(){
 	if(token == "not"){
 		nextToken();
 		if(token == "("){
 			nextToken();
-			//ADD express() WHEN FINISHED WITH IT
+			express();
 			nextToken();
 			if(token != ")"){
 				processError("no closing parentheses to match opening.");
@@ -836,7 +865,7 @@ void Compiler :: part(){
 		nextToken();
 		if(token == "("){
 			nextToken();
-			//ADD express() WHEN FINISHED WITH IT
+			express();
 			nextToken();
 			if(token != ")"){
 				processError("no closing parentheses to match opening.");
@@ -854,7 +883,7 @@ void Compiler :: part(){
 		nextToken();
 		if(token == "("){
 			nextToken();
-			//ADD express() WHEN FINISHED WITH IT
+			express();
 			nextToken();
 			if(token != ")"){
 				processError("no closing parentheses to match opening.");
@@ -877,7 +906,7 @@ void Compiler :: part(){
 	else{
 		if(token == "("){
 			nextToken();
-			//ADD express() WHEN FINISHED WITH IT
+			express();
 			nextToken();
 			if(token != ")"){
 				processError("no closing parentheses to match opening.");
@@ -922,14 +951,13 @@ void Compiler::expresses() {
 	expresses();
 }
 
-
-//Ask about production 8, WRITE_LIST, 
+//this probabaly needs to be fixed too
 void Compiler :: writeStmt(){
 	if (token == "write"){
 		//do we need write list??
 		nextToken();
 		if(token == "("){
-			ids();
+			ids(); //find token in ids
 			nextToken();
 			if(token != ")"){
 				processError("Error expected \")\"");
@@ -945,24 +973,38 @@ void Compiler :: writeStmt(){
 	}
 }
 
+//fix this, causing problems
 void Compiler :: readStmt(){
-	if(token == "read"){
-		nextToken();
-		if(token == "("){
-			ids();
-			nextToken(); 
-			if(token != ")"){
-				processError("Error. Expected \")\" ");
-			}
-			code("read", token);
-		}
-		if(token != ";"){
-			processError("Error. Expected \";\"");
-		}
-	}
-	else{
-		processError("Expected keyword \"read\" ");
-	}
+	string readIn, temp; 
+    temp = "temp";
+    if(token != "read")
+        processError("Keyword \"read\" expected, recieved: " + token); 
+    nextToken(); 
+    if(token!= "(") 
+        processError("Token '(' not found, required for read statements"); 
+    nextToken();
+    if(isNonKeyId(token) == false) 
+        processError("NON_KEY_ID expected, recieved: " +token);
+    readIn = ids(); 
+    //nextToken(); 
+    if(token!=")")
+        processError("Token ')' not found, must have closing ')' for read statements found: " + token);
+    nextToken(); 
+    if(token!=";") 
+        processError("Token ';' not found, must have for concluding statements");
+    uint i = 0; 
+    while(temp != "")
+    {
+        temp = ""; 
+        while(readIn[i] != ',' && i < readIn.length())
+        {
+            temp += readIn[i]; 
+            i++;
+        }
+        i++;
+        if(temp != "")
+            code("read", temp);
+    }
 }
 
 void Compiler :: assignStmt(){
@@ -984,6 +1026,7 @@ void Compiler :: assignStmt(){
 	}
 }
 
+//fix this
 void Compiler :: execStmt(){
 	if(token == "read"){
 		readStmt();
@@ -996,16 +1039,46 @@ void Compiler :: execStmt(){
 	}
 }
 
+//also fix this
 void Compiler :: execStmts(){
-	if(isNonKeyId(token) || token == "read" || token == "write"){
+	while(token != "end"){
 		execStmt();
 		nextToken();
 		execStmts();
 	}
-	else if(token == "end"){
-		processError("are you serious rn bro? 🤨");
+}
+
+/*---------------------------TEMP STUFF -----------------------*/
+void Compiler :: freeTemp(){
+	currentTempNo--;
+	if(currentTempNo < -1){
+		processError("compiler error, current temp should not be less than <= -1");
 	}
 }
+
+string Compiler:: getTemp(){
+	string temp;
+	currentTempNo++;
+	temp = "T" + currentTempNo;
+	if (currentTempNo > maxTempNo){
+		insert(temp, UNKNOWN, VARIABLE, "", NO, 1);
+	}
+	maxTempNo++;
+	return temp;
+}
+
+bool Compiler :: isTemporary(string s) const {
+	if(s[0] == 'T'){
+		return true;
+	} 
+	else {
+		return false;
+	}
+}
+/*------------------------- END OF TEMP STUFF -----------------*/
+
+
+/*---------------------------------------------------------- EMITS------------ -----------------*/
 void Compiler :: emitReadCode(string operand, string operand2) {
 	cout << operand << "    " << operand2 << endl;
 	string name;
@@ -1071,7 +1144,7 @@ void Compiler :: emitWriteCode(string operand, string operand2) {
 		}		
 	}
 }
-//op2 = op1
+
 //op2 = op1
 void Compiler :: emitAssignCode(string operand1, string operand2){
 	if(symbolTable.find(operand1) == symbolTable.end()){
@@ -1177,21 +1250,45 @@ void Compiler :: emitSubtractionCode(string operand1, string operand2){
 	pushOperand(contentsOfAReg);
 }
 
-//get help on this!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 void Compiler:: emitMultiplicationCode(string operand1, string operand2) {
-	if(symbolTable.find(operand1) == symbolTable.end()){
-		processError("refernece to undefined variable");
-	}
-	if(symbolTable.find(operand2) == symbolTable.end()){
-		processError("refernce to undefined variable");
-	}
 	if(whichType(operand1) != INTEGER || whichType(operand2) != INTEGER){
-		processError("error only integers may be used with \"-\" ");
+		processError("error only integers may be used with \"+\" ");
 	}
-	emit("", "mov ", "eax, " + symbolTable.at(operand1).getInternalName(), ";move contenets of operand into eax");
-	emit("", "mov ", "ecx, " + symbolTable.at(operand1).getInternalName(), ";move contenets of operand into ecx");
-	emit("", "imul ", "eax, ecx", ";multiply ecx by eax");
+	//Call is temp
+	if(isTemporary(contentsOfAReg) && contentsOfAReg != operand1 && contentsOfAReg != operand2){
+		emit("", "mov", "[" + contentsOfAReg + "], eax", ";emit code to load operand2 into the A register" );
+		symbolTable.at(contentsOfAReg).setAlloc(YES);
+		contentsOfAReg = "";
+	}
+	if(contentsOfAReg != operand1 && contentsOfAReg != operand2){
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
+		contentsOfAReg = operand2;
+	}
+	//emit code for multiplication
+	if(contentsOfAReg == operand1){
+		emit("", "imul", "eax, [" + operand2 + "]", "; fill this in" );
+	}
+	else {
+		emit("", "imul", "eax, [" + operand1 + "]", "; fill this in" );
+	}
+
+	//if operands are temporaroy deassign them
+	if(isTemporary(operand1)){
+		freeTemp();
+	}
+	if(isTemporary(operand2)){
+		freeTemp();
+	}
+	//give a reg the next availbe temp
+	contentsOfAReg = getTemp();
+	//make a reg an integer
+	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
+	
+	pushOperand(contentsOfAReg);
 }
+
+//get this from victor
 void Compiler :: emitDivisionCode(string operand1, string operand2) {
 	if (whichType(operand1) != INTEGER || whichType(operand2) != INTEGER) {
 		processError("illegal type");
@@ -1262,29 +1359,25 @@ void Compiler :: emitModuloCode(string operand1, string operand2) {
 	
 	pushOperand(contentsOfAReg);
 }
-void Compiler :: emitOrCode(string operand1, string operand2) {
-	if (whichType(operand1) != BOOLEAN || whichType(operand2) != BOOLEAN) {
+
+
+//these  may need more stuff added, such as mov eax, operandX
+void Compiler :: emitNegationCode(string operand1, string nothing){
+	if (whichType(operand1) != BOOLEAN) {
 		processError("illegal type");
 	}
-	if (isTemporary(contentsOfAReg) && contentsOfAReg != operand1 && contentsOfAReg != operand2) {
+	if (isTemporary(contentsOfAReg) && contentsOfAReg != operand1) {
 		emit("", "mov", "[" + contentsOfAReg + "], eax", "; store that temp into memory");
 		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
 		contentsOfAReg = "";
 	}
-	if (isTemporary(contentsOfAReg) == false && contentsOfAReg != operand1 && contentsOfAReg != operand2) {
+	if (isTemporary(contentsOfAReg) == false && contentsOfAReg != operand1) {
 		contentsOfAReg = ""; // deassign it
 	}
-	if (contentsOfAReg != operand1 || contentsOfAReg != operand2) {
-		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
-	}
-	if (contentsOfAReg == operand1) {
-		emit("", "OR", "eax, [" + symbolTable.at(operand2).getInternalName() + "]", "; fill this in");
-	}
-	//if operands are temporaroy deassign them
+	else{
+		emit("", "neg ", "eax", "; AReg = -AReg");
+		//if operands are temporaroy deassign them
 	if(isTemporary(operand1)){
-		freeTemp();
-	}
-	if(isTemporary(operand2)){
 		freeTemp();
 	}
 	//give a reg the next availbe temp
@@ -1293,87 +1386,43 @@ void Compiler :: emitOrCode(string operand1, string operand2) {
 	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
 	
 	pushOperand(contentsOfAReg); // push it to the stack
-}
-/*---------------------------TEMP STUFF -----------------------*/
-void Compiler :: freeTemp(){
-	currentTempNo--;
-	if(currentTempNo < -1){
-		processError("compiler error, current temp should not be less than <= -1");
-	}
-}
-
-string Compiler:: getTemp(){
-	string temp;
-	currentTempNo++;
-	temp = "T" + currentTempNo;
-	if (currentTempNo > maxTempNo){
-		insert(temp, UNKNOWN, VARIABLE, "", NO, 1);
-	}
-	maxTempNo++;
-	return temp;
-}
-
-bool Compiler :: isTemporary(string s) const {
-	if(s[0] == 'T'){
-		return true;
-	} 
-	else {
-		return false;
-	}
-}
-
-void Compiler :: emitNegationCode(string operand1, string nothing){
-	if(whichType(operand1) == INTEGER){
-		emit("", "neg ", "eax", "; AReg = -AReg");
-	}
-	else {
-		processError("\'-\' may only be used on type INTEGER");
 	}
 }
 
 void Compiler :: emitNotCode(string operand1, string nothing){
+	/*
 	if(whichType(operand1) == BOOLEAN){
 		emit("", "not ", "eax", "; AReg = -AReg");
 	}
 	else {
 		processError("\"not\" may only be used on type BOOLEAN");
 	}
-}
-
-void Compiler :: emitAndCode(string operand1, string operand2){
-	if(whichType(operand1) != BOOLEAN || whichType(operand2) != BOOLEAN){
-		processError("error only booleans may be used with \"and\" ");
+	*/
+	if (whichType(operand1) != BOOLEAN) {
+		processError("illegal type");
 	}
-	if(isTemporary(contentsOfAReg) && contentsOfAReg != operand1 && contentsOfAReg != operand2){
-		emit("", "mov", "[" + contentsOfAReg + "], eax", ";emit code to load operand2 into the A register" );
-		symbolTable.at(contentsOfAReg).setAlloc(YES);
+	if (isTemporary(contentsOfAReg) && contentsOfAReg != operand1) {
+		emit("", "mov", "[" + contentsOfAReg + "], eax", "; store that temp into memory");
+		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
 		contentsOfAReg = "";
 	}
-	if(contentsOfAReg != operand1 && contentsOfAReg != operand2){
-		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
-		contentsOfAReg = operand2;
-	}
-	if(contentsOfAReg == operand1){
-		emit("", "and ", "eax, [" + symbolTable.at(operand2).getInternalName() + "]", ";" + contentsOfAReg + "and " + operand2);
+	if (isTemporary(contentsOfAReg) == false && contentsOfAReg != operand1) {
+		contentsOfAReg = ""; // deassign it
 	}
 	else{
-		//emit("", "mov ", "eax, [" + operand1 +"]", ";Areg  = " + operand1 );
-		emit("", "and ", "eax, [" + symbolTable.at(operand1).getInternalName() + "]", ";" + contentsOfAReg + "and " + operand2);
-	}
-
-	//if operands are temporaroy deassign them
+		emit("", "not ", "eax", "; AReg = -AReg");
+		//if operands are temporaroy deassign them
 	if(isTemporary(operand1)){
 		freeTemp();
 	}
-	if(isTemporary(operand2)){
-		freeTemp();
-	}
+
 	//give a reg the next availbe temp
 	contentsOfAReg = getTemp();
 	//make a reg an integer
 	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
 	
-	pushOperand(contentsOfAReg);
+	pushOperand(contentsOfAReg); // push it to the stack
+	}
 }
 
 
@@ -1426,6 +1475,7 @@ void Compiler :: emitEqualityCode(string operand1, string operand2){
 	
 	pushOperand(contentsOfAReg); // push it to the stack
 }
+
 void Compiler :: emitInequalityCode(string operand1, string operand2) {
 	string label1, label2;
 	label1 = getLabel();
@@ -1475,14 +1525,75 @@ void Compiler :: emitInequalityCode(string operand1, string operand2) {
 	
 	pushOperand(contentsOfAReg); // push it to the stack
 }
-string Compiler::getLabel() {
-	static int labelCount = -1;
-	string currentLabel;
-	labelCount++; // increment the number of labels by 1
-	currentLabel = ".L" + to_string(labelCount);
-	return currentLabel; // Return the current label
+
+void Compiler :: emitOrCode(string operand1, string operand2) {
+	if (whichType(operand1) != BOOLEAN || whichType(operand2) != BOOLEAN) {
+		processError("illegal type");
+	}
+	if (isTemporary(contentsOfAReg) && contentsOfAReg != operand1 && contentsOfAReg != operand2) {
+		emit("", "mov", "[" + contentsOfAReg + "], eax", "; store that temp into memory");
+		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
+		contentsOfAReg = "";
+	}
+	if (isTemporary(contentsOfAReg) == false && contentsOfAReg != operand1 && contentsOfAReg != operand2) {
+		contentsOfAReg = ""; // deassign it
+	}
+	if (contentsOfAReg != operand1 || contentsOfAReg != operand2) {
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
+	}
+	if (contentsOfAReg == operand1) {
+		emit("", "OR", "eax, [" + symbolTable.at(operand2).getInternalName() + "]", "; fill this in");
+	}
+	//if operands are temporaroy deassign them
+	if(isTemporary(operand1)){
+		freeTemp();
+	}
+	if(isTemporary(operand2)){
+		freeTemp();
+	}
+	//give a reg the next availbe temp
+	contentsOfAReg = getTemp();
+	//make a reg an integer
+	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
+	
+	pushOperand(contentsOfAReg); // push it to the stack
 }
 
+void Compiler :: emitAndCode(string operand1, string operand2){
+	if(whichType(operand1) != BOOLEAN || whichType(operand2) != BOOLEAN){
+		processError("error only booleans may be used with \"and\" ");
+	}
+	if(isTemporary(contentsOfAReg) && contentsOfAReg != operand1 && contentsOfAReg != operand2){
+		emit("", "mov", "[" + contentsOfAReg + "], eax", ";emit code to load operand2 into the A register" );
+		symbolTable.at(contentsOfAReg).setAlloc(YES);
+		contentsOfAReg = "";
+	}
+	if(contentsOfAReg != operand1 && contentsOfAReg != operand2){
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
+		contentsOfAReg = operand2;
+	}
+	if(contentsOfAReg == operand1){
+		emit("", "and ", "eax, [" + symbolTable.at(operand2).getInternalName() + "]", ";" + contentsOfAReg + "and " + operand2);
+	}
+	else{
+		//emit("", "mov ", "eax, [" + operand1 +"]", ";Areg  = " + operand1 );
+		emit("", "and ", "eax, [" + symbolTable.at(operand1).getInternalName() + "]", ";" + contentsOfAReg + "and " + operand2);
+	}
+
+	//if operands are temporaroy deassign them
+	if(isTemporary(operand1)){
+		freeTemp();
+	}
+	if(isTemporary(operand2)){
+		freeTemp();
+	}
+	//give a reg the next availbe temp
+	contentsOfAReg = getTemp();
+	//make a reg an integer
+	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
+	
+	pushOperand(contentsOfAReg);
+}
 //op2 lhs op1 rhs
 void Compiler :: emitLessThanCode(string operand1, string operand2){
 	string label1 = getLabel();
@@ -1569,6 +1680,7 @@ void Compiler :: emitLessThanOrEqualToCode(string operand1, string operand2){
 	pushOperand(contentsOfAReg);
 
 }
+
 void Compiler :: emitGreaterThanCode(string operand1, string operand2) {
 	string label1, label2;
 	label1 = getLabel();
@@ -1618,6 +1730,7 @@ void Compiler :: emitGreaterThanCode(string operand1, string operand2) {
 	
 	pushOperand(contentsOfAReg); // push it to the stack
 }
+
 void Compiler :: emitGreaterThanOrEqualToCode(string operand1, string operand2) {
 	string label1, label2;
 	label1 = getLabel();
@@ -1666,4 +1779,12 @@ void Compiler :: emitGreaterThanOrEqualToCode(string operand1, string operand2) 
 	symbolTable.at(contentsOfAReg).setDataType(BOOLEAN);
 	
 	pushOperand(contentsOfAReg); // push it to the stack
+}
+
+string Compiler::getLabel() {
+	static int labelCount = -1;
+	string currentLabel;
+	labelCount++; // increment the number of labels by 1
+	currentLabel = ".L" + to_string(labelCount);
+	return currentLabel; // Return the current label
 }
