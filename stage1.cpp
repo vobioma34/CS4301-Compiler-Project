@@ -63,12 +63,8 @@ void Compiler::parser() {
 
 	nextChar();
 	
+	nextToken();
 
-	while(hasErrorBeenFound == false){
-		cout << token << endl;
-		
-		nextToken();
-	}
 
 	if(token != "program"){
 		processError("keyword \"program\" expected");
@@ -211,6 +207,7 @@ string Compiler :: nextToken() {
 			token =  ch;
 		}
 		else {
+			cout << "DEBUG ch " << ch << endl;
 			processError("illegal symbol");
 		}
 	}
@@ -221,10 +218,10 @@ string Compiler :: nextToken() {
 //determines if s is a keyword, true if s is a keyword and false otherwise
 bool Compiler :: isKeyword(string s) const{
     string keywords[] = {"program", "const", "var", "integer", "boolean", 
-                            "begin", "end", "true", "false", "not", "and", "or"};
+                            "begin", "end", "true", "false", "not", "and", "or", "mod", "div", "and", "or", "read", "write"};
 
     //go through keywords array and see if s matches nay key words
-    for(int i = 0; i < 10; i++){ //change hardcoded 10 and ask Dr.Motl
+    for(uint i = 0; i < sizeof(keywords)/sizeof(keywords[0]); i++){ //change hardcoded 10 and ask Dr.Motl
         if (s == keywords[i]) {
             return true; //if s matches a keyword, return true
         }
@@ -233,9 +230,9 @@ bool Compiler :: isKeyword(string s) const{
 }
 //determines if c is a special symbol, true is it is a special symbol otherwise false
 bool Compiler :: isSpecialSymbol(char c) const {
-    char specialSymbols[] = {':', ',', ';', '=', '+', '-', '.'};
+    char specialSymbols[] = {':', ',', ';', '=', '+', '-', '.', '(', ')', '*'};
 
-    for(int i = 0; i < 7; i++){
+    for(uint i = 0; i < sizeof(specialSymbols)/sizeof(specialSymbols[0]); i++){
          if (c == specialSymbols[i]) {
             return true; //if c matches a special symbol, return true
         }
@@ -919,7 +916,12 @@ void Compiler::factors() {
 		pushOperator(token);
 		part();
 	}
-	code(popOperator(), popOperand(), popOperand());
+	string popOprt, lhs, rhs;
+	popOprt = popOperator();
+	rhs = popOperand();
+	lhs = popOperand();
+	code(popOprt, lhs, rhs);
+
 	factors();
 }
 void Compiler::express() {
@@ -939,7 +941,11 @@ void Compiler::terms() {
 		pushOperator(token);
 		factor();
 	}
-	code(popOperator(), popOperand(), popOperand());
+	string popOprt, lhs, rhs;
+	popOprt = popOperator();
+	rhs = popOperand();
+	lhs = popOperand();
+	code(popOprt, lhs, rhs);
 	terms();
 }
 void Compiler::expresses() {
@@ -947,34 +953,53 @@ void Compiler::expresses() {
 		pushOperator(token);
 		term();
 	}
-	code(popOperator(), popOperand(), popOperand());
+	string popOprt, lhs, rhs;
+	popOprt = popOperator();
+	rhs = popOperand();
+	lhs = popOperand();
+	code(popOprt, lhs, rhs);
 	expresses();
 }
 
 //this probabaly needs to be fixed too
 void Compiler :: writeStmt(){
-	if (token == "write"){
-		//do we need write list??
-		nextToken();
-		if(token == "("){
-			ids(); //find token in ids
-			nextToken();
-			if(token != ")"){
-				processError("Error expected \")\"");
-			}
-			code("write", token);
-		}
-		if(token != ";"){
-			processError("Error. Expected \";\"");
-		}
-	} 
-	else{
-		processError("Expected keyword \"write\"");
-	}
+	cout << "DEBUG WRITE" << endl;
+	string writeOut, temp; 
+    temp = "temp";
+    if(token != "write")
+        processError("Keyword \"write\" expected, recieved: " + token); 
+    nextToken(); 
+    if(token!= "(") 
+        processError("Token '(' not found, required for write statements"); 
+    nextToken();
+    if(isNonKeyId(token) == false) 
+        processError("NON_KEY_ID expected, recieved: " +token);
+    writeOut = ids(); 
+	cout << "DEBUG TOKEN IN WRITE  " << token << endl; 
+    //nextToken(); 
+    if(token!=")")
+        processError("Token ')' not found, must have closing ')' for write statements found: " + token);
+    nextToken(); 
+    if(token!=";") 
+        processError("Token ';' not found, must have for concluding statements");
+    uint i = 0; 
+    while(temp != "")
+    {
+        temp = ""; 
+        while(writeOut[i] != ',' && i < writeOut.length())
+        {
+            temp += writeOut[i]; 
+            i++;
+        }
+        i++;
+        if(temp != "")
+            code("write", temp);
+    }
 }
 
 //fix this, causing problems
 void Compiler :: readStmt(){
+	cout << "DEBUG" << endl;
 	string readIn, temp; 
     temp = "temp";
     if(token != "read")
@@ -986,6 +1011,7 @@ void Compiler :: readStmt(){
     if(isNonKeyId(token) == false) 
         processError("NON_KEY_ID expected, recieved: " +token);
     readIn = ids(); 
+	cout << "DEBUG TOKEN IN READ  " << token << endl; 
     //nextToken(); 
     if(token!=")")
         processError("Token ')' not found, must have closing ')' for read statements found: " + token);
@@ -1019,9 +1045,15 @@ void Compiler :: assignStmt(){
 		if(token != ";"){
 			processError("Error \";\" expected");
 		}
-		code("read", token);
+		//THIS NEEDS TO BE PASTED IN MANY PLACES
+		string popOprt, lhs, rhs;
+		popOprt = popOperator();
+		rhs = popOperand();
+		lhs = popOperand();
+		code(popOprt, lhs, rhs);
 	} 
 	else {
+		cout << "DEBUG ASSIGNMENT " << token << endl;
 		processError("NonKeyID epxected before \":=\" ");
 	}
 }
@@ -1034,7 +1066,7 @@ void Compiler :: execStmt(){
 	else if(token == "write"){
 		writeStmt();
 	}
-	else if (isNonKeyId(token) && nextToken() == ":="){
+	else if (isNonKeyId(token)){ //dont jump ahead too far
 		assignStmt();
 	}
 }
