@@ -1476,3 +1476,90 @@ string Compiler::getLabel() {
 	currentLabel = ".L" + to_string(labelCount);
 	return currentLabel; // Return the current label
 }
+
+//op2 lhs op1 rhs
+void Compiler :: emitLessThanCode(string operand1, string operand2){
+	string label1 = getLabel();
+	string label2 = getLabel();
+
+	if(whichType(operand1) != INTEGER || whichType(operand2) != INTEGER){
+		processError("error only integers may be used with \"<=\" ");
+	}
+	//Call is temp
+	if(isTemporary(contentsOfAReg) && contentsOfAReg != operand1 && contentsOfAReg != operand2){
+		emit("", "mov", "[" + contentsOfAReg + "], eax", ";emit code to load operand2 into the A register" );
+		symbolTable.at(contentsOfAReg).setAlloc(YES);
+		contentsOfAReg = "";
+	}
+	if(contentsOfAReg != operand1 && contentsOfAReg != operand2){
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
+		contentsOfAReg = operand2;
+	}
+	else{
+		emit("", "cmp ", "eax, [" + symbolTable.at(operand1).getInternalName() + "]", ";compare eax and " +symbolTable.at(operand1).getInternalName());
+		emit("", "jl ", label1, ";if eax is less than" + symbolTable.at(operand1).getInternalName());
+		emit("", "jmp ", label2, ";if eax is not less than" +symbolTable.at(operand1).getInternalName());
+		emit(label1 + ":", "", "" ,"");
+		emit("", "mov ", "eax, [true]", ";assign eax value of true");
+		emit(label2 + ":", "", "" ,"");
+		emit("", "mov ", "eax, [false]", ";assign eax value of false");
+	}
+
+	//if operands are temporaroy deassign them
+	if(isTemporary(operand1)){
+		freeTemp();
+	}
+	if(isTemporary(operand2)){
+		freeTemp();
+	}
+	//give a reg the next availbe temp
+	contentsOfAReg = getTemp();
+	//make a reg an integer
+	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
+	
+	pushOperand(contentsOfAReg);
+
+}
+
+void Compiler :: emitLessThanOrEqualToCode(string operand1, string operand2){
+	string label1 = getLabel();
+	string label2 = getLabel();
+
+	if(whichType(operand1) != INTEGER || whichType(operand2) != INTEGER){
+		processError("error only integers may be used with \"<=\" ");
+	}
+	//Call is temp
+	if(isTemporary(contentsOfAReg) && contentsOfAReg != operand1 && contentsOfAReg != operand2){
+		emit("", "mov", "[" + contentsOfAReg + "], eax", ";emit code to load operand2 into the A register" );
+		symbolTable.at(contentsOfAReg).setAlloc(YES);
+		contentsOfAReg = "";
+	}
+	if(contentsOfAReg != operand1 && contentsOfAReg != operand2){
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
+		contentsOfAReg = operand2;
+	}
+	else{
+		emit("", "cmp ", "eax, [" + symbolTable.at(operand1).getInternalName() + "]", ";compare eax and " +symbolTable.at(operand1).getInternalName());
+		emit("", "jle ", label1, ";if eax is less than" + symbolTable.at(operand1).getInternalName());
+		emit("", "jmp ", label2, ";if eax is not less than" +symbolTable.at(operand1).getInternalName());
+		emit(label1 + ":", "", "" ,"");
+		emit("", "mov ", "eax, [true]", ";assign eax value of true");
+		emit(label2 + ":", "", "" ,"");
+		emit("", "mov ", "eax, [false]", ";assign eax value of false");
+	}
+
+	//if operands are temporaroy deassign them
+	if(isTemporary(operand1)){
+		freeTemp();
+	}
+	if(isTemporary(operand2)){
+		freeTemp();
+	}
+	//give a reg the next availbe temp
+	contentsOfAReg = getTemp();
+	//make a reg an integer
+	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
+	
+	pushOperand(contentsOfAReg);
+
+}
