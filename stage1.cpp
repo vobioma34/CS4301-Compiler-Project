@@ -1109,14 +1109,6 @@ void Compiler :: emitAssignCode(string operand1, string operand2){
 
 //op2 + op1
 void Compiler :: emitAdditionCode(string operand1, string operand2){
-	/*
-	if(symbolTable.find(operand1) == symbolTable.end()){
-		processError("refernece to undefined variable");
-	}
-	if(symbolTable.find(operand2) == symbolTable.end()){
-		processError("refernce to undefined variable");
-	}
-	*/
 	if(whichType(operand1) != INTEGER || whichType(operand2) != INTEGER){
 		processError("error only integers may be used with \"+\" ");
 	}
@@ -1132,10 +1124,10 @@ void Compiler :: emitAdditionCode(string operand1, string operand2){
 	}
 	//emit code for addition
 	if(contentsOfAReg == operand1){
-		emit("", "add", "eax, [" + operand2 + "]", "; fill this in" );
+		emit("", "add", "eax, [" + symbolTable.at(operand2).getInternalName() + "]", "; fill this in" );
 	}
 	else {
-		emit("", "add", "eax, [" + operand1 + "]", "; fill this in" );
+		emit("", "add", "eax, [" + symbolTable.at(operand1).getInternalName() + "]", "; fill this in" );
 	}
 
 	//if operands are temporaroy deassign them
@@ -1151,7 +1143,6 @@ void Compiler :: emitAdditionCode(string operand1, string operand2){
 	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
 	
 	pushOperand(contentsOfAReg);
-	
 }
 // op2 -  op1
 void Compiler :: emitSubtractionCode(string operand1, string operand2){
@@ -1164,15 +1155,12 @@ void Compiler :: emitSubtractionCode(string operand1, string operand2){
 		symbolTable.at(contentsOfAReg).setAlloc(YES);
 		contentsOfAReg = "";
 	}
-	if(contentsOfAReg != operand1 && contentsOfAReg != operand2){
+	if(contentsOfAReg != operand2){
 		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
 		contentsOfAReg = operand2;
 	}
 	//emit code for subtraction
-	if(contentsOfAReg == operand1){
-		emit("", "sub", "eax, [" + operand1 + "]", "; fill this in" );
-	}
-	
+	emit("", "sub", "eax, [" + symbolTable.at(operand1).getInternalName() + "]", "; fill this in" );
 
 	//if operands are temporaroy deassign them
 	if(isTemporary(operand1)){
@@ -1187,7 +1175,6 @@ void Compiler :: emitSubtractionCode(string operand1, string operand2){
 	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
 	
 	pushOperand(contentsOfAReg);
-	
 }
 
 //get help on this!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1201,35 +1188,29 @@ void Compiler:: emitMultiplicationCode(string operand1, string operand2) {
 	if(whichType(operand1) != INTEGER || whichType(operand2) != INTEGER){
 		processError("error only integers may be used with \"-\" ");
 	}
-	emit("", "mov ", "eax, " + operand1, ";move contenets of operand into eax");
-	emit("", "mov ", "ecx, " + operand1, ";move contenets of operand into ecx");
+	emit("", "mov ", "eax, " + symbolTable.at(operand1).getInternalName(), ";move contenets of operand into eax");
+	emit("", "mov ", "ecx, " + symbolTable.at(operand1).getInternalName(), ";move contenets of operand into ecx");
 	emit("", "imul ", "eax, ecx", ";multiply ecx by eax");
 }
 void Compiler :: emitDivisionCode(string operand1, string operand2) {
 	if (whichType(operand1) != INTEGER || whichType(operand2) != INTEGER) {
 		processError("illegal type");
 	}
-	// emit code to store that temp into memory
-    // change the allocate entry for it in the symbol table to yes
-	// deassign it
-	if (isTemporary(contentsOfAReg) && contentsOfAReg != operand2) {
-		emit("", "mov", "[" + contentsOfAReg + "], eax", "; store that temp into memory");
-		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
-		contentsOfAReg = "";
+	if (isTemporary(contentsOfAReg) == true && contentsOfAReg != operand2) {
+		emit("", "mov", "[" + contentsOfAReg + "], eax", "; fill this in");
+		symbolTable.at(contentsOfAReg).setAlloc(YES);
+		contentsOfAReg = ""; // deassign it
 	}
-	// emit instruction to do a register-memory load of operand2 into the A register
-	// operand2 is not in the A register
-	if (isTemporary(contentsOfAReg) == false && contentsOfAReg != operand2) { // maybe incorrect
+	if (isTemporary(contentsOfAReg) == false && contentsOfAReg != operand2) {
+		contentsOfAReg = ""; // deassign it
+	}
+	if (contentsOfAReg != operand2) {
 		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
-		contentsOfAReg = operand2;
 	}
-	// emit code to extend sign of dividend from the A register to edx:eax
-    // still need to write this line(s) of code...
+	// perform the register-memory divison
+	emit("","cdq","","");
+	emit("", "idiv", "dword [" + symbolTable.at(operand1).getInternalName() + "]", "; fill this in");
 	
-	// emit code to perform a register-memory division
-	if (contentsOfAReg == operand1) {
-		emit("", "div", "eax, [" + operand1 + "]", "; fill this in" );
-	}
 	
 	//if operands are temporaroy deassign them
 	if(isTemporary(operand1)){
@@ -1243,29 +1224,29 @@ void Compiler :: emitDivisionCode(string operand1, string operand2) {
 	//make a reg an integer
 	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
 	
-	pushOperand(contentsOfAReg); // push it to the stack
+	pushOperand(contentsOfAReg);
 	
 }
 void Compiler :: emitModuloCode(string operand1, string operand2) {
-	// emit code to store that temp into memory
-    // change the allocate entry for it in the symbol table to yes
-	// deassign it
-	if (isTemporary(contentsOfAReg) && contentsOfAReg != operand2) {
-		emit("", "mov", "[" + contentsOfAReg + "], eax", "; store that temp into memory");
-		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
-		contentsOfAReg = "";
+	if (whichType(operand1) != INTEGER || whichType(operand2) != INTEGER) {
+		processError("illegal type");
 	}
-	// emit instruction to do a register-memory load of operand2 into the A register
-	// operand2 is not in the A register
-	if (isTemporary(contentsOfAReg) == false && contentsOfAReg != operand2) { // maybe incorrect
+	if (isTemporary(contentsOfAReg) == true && contentsOfAReg != operand2) {
+		emit("", "mov", "[" + contentsOfAReg + "], eax", "; fill this in");
+		symbolTable.at(contentsOfAReg).setAlloc(YES);
+		contentsOfAReg = ""; // deassign it
+	}
+	if (isTemporary(contentsOfAReg) == false && contentsOfAReg != operand2) {
+		contentsOfAReg = ""; // deassign it
+	}
+	if (contentsOfAReg != operand2) {
 		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
-		contentsOfAReg = operand2;
 	}
+	// perform the register-memory modular
+	emit("","cdq","","");
+	emit("", "idiv", "dword [" + symbolTable.at(operand1).getInternalName() + "]", "; fill this in");
+	emit("", "xchg", "eax, edx", "");
 	
-	// emit code to perform a register-memory modular 
-	if (contentsOfAReg == operand1) {
-		emit("", "div", "[" + operand1 + "]", "; fill this in" ); // maybe?
-	}
 	
 	//if operands are temporaroy deassign them
 	if(isTemporary(operand1)){
@@ -1279,7 +1260,7 @@ void Compiler :: emitModuloCode(string operand1, string operand2) {
 	//make a reg an integer
 	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
 	
-	pushOperand(contentsOfAReg); // push it to the stack
+	pushOperand(contentsOfAReg);
 }
 void Compiler :: emitOrCode(string operand1, string operand2) {
 	if (whichType(operand1) != BOOLEAN || whichType(operand2) != BOOLEAN) {
@@ -1373,11 +1354,11 @@ void Compiler :: emitAndCode(string operand1, string operand2){
 		contentsOfAReg = operand2;
 	}
 	if(contentsOfAReg == operand1){
-		emit("", "and ", "eax, [" + operand2 + "]", ";" + contentsOfAReg + "and " + operand2);
+		emit("", "and ", "eax, [" + symbolTable.at(operand2).getInternalName() + "]", ";" + contentsOfAReg + "and " + operand2);
 	}
 	else{
 		//emit("", "mov ", "eax, [" + operand1 +"]", ";Areg  = " + operand1 );
-		emit("", "and ", "eax, [" + operand1 + "]", ";" + contentsOfAReg + "and " + operand2);
+		emit("", "and ", "eax, [" + symbolTable.at(operand1).getInternalName() + "]", ";" + contentsOfAReg + "and " + operand2);
 	}
 
 	//if operands are temporaroy deassign them
@@ -1587,4 +1568,53 @@ void Compiler :: emitLessThanOrEqualToCode(string operand1, string operand2){
 	
 	pushOperand(contentsOfAReg);
 
+}
+void Compiler :: emitGreaterThanCode(string operand1, string operand2) {
+	string label1, label2;
+	label1 = getLabel();
+	label2 = getLabel();
+	// types of operands are not the same
+	if (whichType(operand1) != whichType(operand2)) {
+		processError("incompatible types");
+	}
+	// if the A Register holds a temp not operand1 nor operand2
+	if (isTemporary(contentsOfAReg) && (contentsOfAReg != operand1 || contentsOfAReg != operand2)) {
+		emit("", "mov", "[" + contentsOfAReg + "], eax", "; store that temp into memory"); // store the temp into memory
+		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
+		contentsOfAReg = ""; // deassign it
+	}
+	// if the A register holds a non-temp not operand2 nor operand1
+	if (isTemporary(contentsOfAReg) == false && (contentsOfAReg != operand1 || contentsOfAReg != operand2)) {
+		contentsOfAReg = ""; // deassign it
+	}
+	if (contentsOfAReg != operand1 && contentsOfAReg != operand2) {
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax"); // load operand2 into the A register
+	}
+	emit("", "cmp", "eax, [" + symbolTable.at(operand1).getInternalName() + "]","; fill this in"); // perform a register-memory compare
+	emit("", "jg", label1, ""); // jump if greater than and the next available Ln (call getLabel)
+	emit("", "mov", "eax, [FALSE]", "; load FALSE"); //  load FALSE into the A register
+	emit("", "jmp", label2, "; unconditional jump"); // perform an unconditional jump to the next label (call getLabel should be L(n+1))
+	emit(label1, "", "", ""); // emit code to label the next instruction with the first acquired label Ln
+	emit("", "mov", "eax, [TRUE]", "; load TRUE"); //  load TRUE into the A register
+	emit(label2, "", "", "");
+	// inserting true and false into the symbol table
+	if (symbolTable.count("true") == 0) {
+		symbolTable.insert({ "true", SymbolTableEntry("TRUE", BOOLEAN, CONSTANT, "-1", YES, 1) });
+	}
+	if (symbolTable.count("false") == 0) {
+		symbolTable.insert({ "false", SymbolTableEntry("FALSE", BOOLEAN, CONSTANT, "0", YES, 1) });
+	}
+	//if operands are temporaroy deassign them
+	if(isTemporary(operand1)){
+		freeTemp();
+	}
+	if(isTemporary(operand2)){
+		freeTemp();
+	}
+	//give a reg the next availbe temp
+	contentsOfAReg = getTemp();
+	//make a reg an integer
+	symbolTable.at(contentsOfAReg).setDataType(BOOLEAN);
+	
+	pushOperand(contentsOfAReg); // push it to the stack
 }
