@@ -45,20 +45,8 @@ void Compiler::createListingHeader(){
 /*---------------------------------------PARSER----------------------------------------------------*/
 //"new int main() - Womack 2022"
 void Compiler::parser() {
-	//listingFile << "testing of next char: " << nextChar() << nextChar() << nextChar() << endl;
-	
-	
-	/*
-	cout << isNonKeyId("boolean") << endl;
-	cout << isNonKeyId("stage0no001") << endl;
-	cout << isNonKeyId("true") << endl;
-	cout << isNonKeyId("const") << endl;
-	*/
 
-	/*
-	nextChar();
-	nextToken();
-	*/
+	
 	
 
 	nextChar();
@@ -207,7 +195,6 @@ string Compiler :: nextToken() {
 			token =  ch;
 		}
 		else {
-			cout << "DEBUG ch " << ch << endl;
 			processError("illegal symbol");
 		}
 	}
@@ -338,8 +325,6 @@ string Compiler::ids()
 storeTypes Compiler :: whichType(string name){
 	//will need store types enum called dataType
 	storeTypes dataType;
-	//cout << token;
-	//cout << endl << name << endl;
 	if(isLiteral(name)){
 		if(isBoolean(name)){
 			dataType = BOOLEAN;
@@ -435,8 +420,6 @@ void Compiler::constStmts() // token should be NON_KEY_ID
 	}
 
 	y = nextToken();
-	//cout << endl << x << endl;
-	//cout << y << endl;
 
 	if (y != "+" && y != "-" && y != "not" && !isNonKeyId(y) && y != "true" && y != "false" && whichType(y) != INTEGER) {
 		processError("token to right of \"=\" illegal");
@@ -549,19 +532,18 @@ void Compiler::progStmt() // token should be "program"
 		processError("keyword \"program\" expected");
 	}
 	
-	//cout << token << endl;
+
 	x = nextToken();
-	
-	//cout << token << endl;
+
 	
 	if (isNonKeyId(token) == false) {
 		
-		//cout << token << endl;
+
 		processError("program name expected");
 	}
 	
 	nextToken();
-	//cout << token << endl;
+
 	if (token != ";") {
 		
 		processError("semicolon expected");
@@ -745,7 +727,7 @@ void Compiler::emitStorage()
 	emit("SECTION", ".data", "", "");
 	 for (auto it = symbolTable.cbegin(); it != symbolTable.cend(); ++it) {
 		 if (((*it).second.getAlloc() == YES) && ((*it).second.getMode() == CONSTANT)) {
-			 //cout << "TESTING VALUE:" << (*it).second.getValue() << endl;
+			
 			 if((*it).second.getValue() == "false" ){
 			 	emit((*it).second.getInternalName(), "dd", "0", ("; "+(*it).first));
 			 }
@@ -802,6 +784,7 @@ void Compiler::pushOperand(string name) { // push name into operandStk
 	if (isLiteral(name) && symbolTable.count(name) == 0) {
 		insert(name, whichType(name), CONSTANT, whichValue(name), YES, 1);
 	}
+	cout << "DEBUG pushOPRND: " << name << endl;
 	operandStk.push(name);
 }
 string Compiler::popOperand() {
@@ -810,6 +793,7 @@ string Compiler::popOperand() {
 		operandStk.pop();
 		return topElement;
 	} else {
+		//cout << "DEBUG popOperand "<<operandStk.top() << endl; this caused a core dump
 		processError("compiler error; operand stack underflow");
 	}
 	return "";
@@ -817,6 +801,7 @@ string Compiler::popOperand() {
 
 //fix this for edge case, when you get something thst is already in the symbol table
 void Compiler :: pushOperator(string op){
+	cout << "DEBUG pushOPRTR: " << op << endl;
     operatorStk.push(op);
 }
 
@@ -828,6 +813,7 @@ string Compiler:: popOperator(){
         return topOfStack;
    }
    else{
+	   //cout << "DEBUG popOperator "<<operandStk.top() << endl;
         processError("compiler error; operator stack underflow");
    }
    //dummy return
@@ -915,14 +901,15 @@ void Compiler::factors() {
 	if (token == "*" || token == "div" || token == "mod" || token == "and") {
 		pushOperator(token);
 		part();
-	}
-	string popOprt, lhs, rhs;
-	popOprt = popOperator();
-	rhs = popOperand();
-	lhs = popOperand();
-	code(popOprt, lhs, rhs);
+		string popOprt, lhs, rhs;
+		popOprt = popOperator();
+		rhs = popOperand();
+		lhs = popOperand();
+		code(popOprt, lhs, rhs);
 
-	factors();
+		factors();
+	}
+	
 }
 void Compiler::express() {
 	term();
@@ -938,32 +925,40 @@ void Compiler::term() {
 }
 void Compiler::terms() {
 	if (token == "+" || token == "-" || token == "or") {
+
+		//string t = token;
+
 		pushOperator(token);
+		nextToken();
 		factor();
+		
+		string popOprt, lhs, rhs;
+		popOprt = popOperator();
+		rhs = popOperand();
+		lhs = popOperand();
+		code(popOprt, lhs, rhs);
+
+		terms();
 	}
-	string popOprt, lhs, rhs;
-	popOprt = popOperator();
-	rhs = popOperand();
-	lhs = popOperand();
-	code(popOprt, lhs, rhs);
-	terms();
+	
 }
 void Compiler::expresses() {
 	if (token == "=" || token == "<>" || token == "<=" || token == ">=" || token == "<" || token == ">") {
 		pushOperator(token);
 		term();
+		string popOprt, lhs, rhs;
+		popOprt = popOperator();
+		rhs = popOperand();
+		lhs = popOperand();
+		code(popOprt, lhs, rhs);
+		expresses();
 	}
-	string popOprt, lhs, rhs;
-	popOprt = popOperator();
-	rhs = popOperand();
-	lhs = popOperand();
-	code(popOprt, lhs, rhs);
-	expresses();
+	
 }
 
 //this probabaly needs to be fixed too
 void Compiler :: writeStmt(){
-	cout << "DEBUG WRITE" << endl;
+	
 	string writeOut, temp; 
     temp = "temp";
     if(token != "write")
@@ -975,7 +970,7 @@ void Compiler :: writeStmt(){
     if(isNonKeyId(token) == false) 
         processError("NON_KEY_ID expected, recieved: " +token);
     writeOut = ids(); 
-	cout << "DEBUG TOKEN IN WRITE  " << token << endl; 
+	
     //nextToken(); 
     if(token!=")")
         processError("Token ')' not found, must have closing ')' for write statements found: " + token);
@@ -999,7 +994,7 @@ void Compiler :: writeStmt(){
 
 //fix this, causing problems
 void Compiler :: readStmt(){
-	cout << "DEBUG" << endl;
+	
 	string readIn, temp; 
     temp = "temp";
     if(token != "read")
@@ -1011,7 +1006,7 @@ void Compiler :: readStmt(){
     if(isNonKeyId(token) == false) 
         processError("NON_KEY_ID expected, recieved: " +token);
     readIn = ids(); 
-	cout << "DEBUG TOKEN IN READ  " << token << endl; 
+	 
     //nextToken(); 
     if(token!=")")
         processError("Token ')' not found, must have closing ')' for read statements found: " + token);
@@ -1053,7 +1048,7 @@ void Compiler :: assignStmt(){
 		code(popOprt, lhs, rhs);
 	} 
 	else {
-		cout << "DEBUG ASSIGNMENT " << token << endl;
+		//cout << "DEBUG ASSIGNMENT " << token << endl;
 		processError("NonKeyID epxected before \":=\" ");
 	}
 }
@@ -1076,7 +1071,7 @@ void Compiler :: execStmts(){
 	while(token != "end"){
 		execStmt();
 		nextToken();
-		execStmts();
+		//execStmts();
 	}
 }
 
@@ -1112,7 +1107,6 @@ bool Compiler :: isTemporary(string s) const {
 
 /*---------------------------------------------------------- EMITS------------ -----------------*/
 void Compiler :: emitReadCode(string operand, string operand2) {
-	cout << operand << "    " << operand2 << endl;
 	string name;
 	unsigned int nameOfCurrentList = 0;
 	while (nameOfCurrentList < operand.length()) {
