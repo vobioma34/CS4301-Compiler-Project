@@ -118,7 +118,6 @@ char Compiler :: nextChar(){
 
     return ch;
 }
-//nees to be fixed
 string Compiler :: nextToken() {
 	token = "";
 	//ch = nextChar();
@@ -140,9 +139,35 @@ string Compiler :: nextToken() {
 		else if (isspace(ch)) {
 			nextChar();
 		}
-		else if (isSpecialSymbol(ch)) {
+		else if (isSpecialSymbol(ch)) { 
 			token = ch;
 			nextChar();
+
+			//handle compound operators here
+			if(token == ":"){
+				if(ch == '='){
+					token = token + ch;
+					nextChar();
+				}
+			}
+
+			if(token == "<"){
+				if(ch == '='){
+					token = token + ch;
+					nextChar();
+				}
+				else if(ch == '>'){
+					token = token + ch;
+					nextChar();
+				}
+			}
+
+			if(token == ">"){
+				if(ch == '='){
+					token = token + ch;
+					nextChar();
+				}
+			}	
 		}
 		else if (islower(ch)) {
 			token = ch;
