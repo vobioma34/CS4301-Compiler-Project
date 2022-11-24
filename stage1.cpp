@@ -388,6 +388,7 @@ void Compiler::insert(string externalName, storeTypes inType, modes inMode, stri
 				processError("illegal use of keyword");
 			} else {
 				if (isupper(name[0])) {
+					cout << "Temps created" << endl;
 					symbolTable.insert({ name, SymbolTableEntry(name, inType, inMode, inValue, inAlloc, inUnits) });
 				} else {
 					symbolTable.insert({ name, SymbolTableEntry(genInternalName(inType), inType, inMode, inValue, inAlloc, inUnits) });
@@ -561,13 +562,13 @@ void Compiler::beginEndStmt() // token should be "begin"
 		processError("keyword \"begin\" expected");
 	}
 	execStmts();
-	if (nextToken() != "end") {
+	if (token != "end") {
+		cout << "I WANT TO DIE " << token << endl;
 		processError("keyword \"end\" expected");
 	}
 	if (nextToken() != ".") {
 		processError("period expected");
 	}
-    
 	nextToken();
 	code("end", ".");
 }
@@ -823,22 +824,28 @@ string Compiler:: popOperator(){
 /* -------------------- END OF PUSH AND POP ---------------------------*/
 
 void Compiler :: part(){
+	cout << "partbegin" << endl; 
 	if(token == "not"){
 		nextToken();
+		cout << "part1" << endl;
 		if(token == "("){
 			nextToken();
 			express();
-			nextToken();
+			//nextToken();
 			if(token != ")"){
 				processError("no closing parentheses to match opening.");
 			}
 			code("not", popOperand());
+			nextToken();
 		}
 		else if(isBoolean(token)){
+			cout << "partpushOperand1 " + token << endl;
 			pushOperand(token);
+			nextToken();
 		} 
 		else if(isNonKeyId(token)){
 			code("not", token);
+			nextToken();
 		}
 		else{
 			processError("a non boolean operator cannot follow \"not\" goofy");
@@ -846,17 +853,21 @@ void Compiler :: part(){
 	}
 	else if(token == "+"){
 		nextToken();
+		cout << "part2" << endl;
 		if(token == "("){
 			nextToken();
 			express();
-			nextToken();
+			//nextToken();
 			if(token != ")"){
 				processError("no closing parentheses to match opening.");
 			}
-			code("not", popOperand());
+			
+			nextToken();
 		}
 		else if(isInteger(token) || isNonKeyId(token)){
+			cout << "partpushOperand2 " + token << endl;
 			pushOperand(token);
+			nextToken();
 		}
 		else{
 			processError("must have an integer valte after \'+\' GOPFY");
@@ -864,42 +875,56 @@ void Compiler :: part(){
 	}
 	else if(token == "-"){
 		nextToken();
+		cout << "part3" << endl;
 		if(token == "("){
 			nextToken();
 			express();
-			nextToken();
+			//nextToken();
 			if(token != ")"){
 				processError("no closing parentheses to match opening.");
 			}
 			code("neg", popOperand());
+			nextToken();
 		}
 		else if(isInteger(token)){
+			cout << "partpushOperand3 " + token << endl;
 			pushOperand("-" + token);
+			nextToken();
 		}
 		else if(isNonKeyId(token)){
 			code("neg", token);
+			nextToken();
 		} 
 		else{
 			processError("Integer value must follow \"-\"");
 		}
 	}
-	else if(isInteger(token) || isBoolean(token) || isNonKeyId(token)){
-		pushOperand(token);
-	}
-	else{
-		if(token == "("){
+	else if(token == "(")
+	{
+		cout << "part5" << endl;
 			nextToken();
 			express();
-			nextToken();
+			//nextToken();
 			if(token != ")"){
 				processError("no closing parentheses to match opening.");
 			}
-		}
+			nextToken();
 	}
+	else if(isInteger(token) || isBoolean(token) || isNonKeyId(token)){
+		cout << "partpushOperand4 " + token << endl;
+		pushOperand(token);
+		cout << "part4" << endl;
+		nextToken();
+	}
+
 }
 void Compiler::factors() {
+	cout << "TESTING FROM FACTORS: " << token << endl;
 	if (token == "*" || token == "div" || token == "mod" || token == "and") {
 		pushOperator(token);
+		
+		nextToken();
+		cout << "TOKEN IN FACTORS: " + token << endl;
 		part();
 		string popOprt, lhs, rhs;
 		popOprt = popOperator();
@@ -909,35 +934,41 @@ void Compiler::factors() {
 
 		factors();
 	}
-	
+	cout << "factors end" << endl;
 }
 void Compiler::express() {
+	cout << "It got to express " << token << endl;
 	term();
+	cout << "call to term in express success" << endl;
 	expresses();
+	cout << "call to expresses in express success" << endl;
 }
 void Compiler::factor() {
 	part();
 	factors();
+	cout << "factor end" << endl;
 }
 void Compiler::term() {
+	cout << "made it to term " << token << endl;
+	cout << "top of operator stk bruh: " << operatorStk.top() << endl;
 	factor();
+	cout << "finished factor" << endl;
 	terms();
 }
 void Compiler::terms() {
 	if (token == "+" || token == "-" || token == "or") {
 
-		//string t = token;
-
 		pushOperator(token);
+		cout << "TERMS: " << token << endl;
 		nextToken();
 		factor();
-		
+		cout << "smh" << endl;
 		string popOprt, lhs, rhs;
 		popOprt = popOperator();
 		rhs = popOperand();
 		lhs = popOperand();
+		cout << popOprt << endl;
 		code(popOprt, lhs, rhs);
-
 		terms();
 	}
 	
@@ -945,6 +976,8 @@ void Compiler::terms() {
 void Compiler::expresses() {
 	if (token == "=" || token == "<>" || token == "<=" || token == ">=" || token == "<" || token == ">") {
 		pushOperator(token);
+		cout << "EXPRESS: " << token << endl;
+		nextToken();
 		term();
 		string popOprt, lhs, rhs;
 		popOprt = popOperator();
@@ -956,7 +989,6 @@ void Compiler::expresses() {
 	
 }
 
-//this probabaly needs to be fixed too
 void Compiler :: writeStmt(){
 	
 	string writeOut, temp; 
@@ -992,7 +1024,6 @@ void Compiler :: writeStmt(){
     }
 }
 
-//fix this, causing problems
 void Compiler :: readStmt(){
 	
 	string readIn, temp; 
@@ -1029,16 +1060,26 @@ void Compiler :: readStmt(){
 }
 
 void Compiler :: assignStmt(){
-	if(isNonKeyId(token)){
+	cout << "LATEST TESTING: " << token << endl;
+	
+
 		pushOperand(token);
 		nextToken();
-		if(token == ":="){
-			pushOperator(":=");
-			express();
+
+		if(token != ":="){
+			//cout << "DEBUG IN ASSIGNSTMT: " << token << endl;
+			processError("cannot have an assignment statment without \" := \" ");
 		}
+		pushOperator(token);
 		nextToken();
+		if(token != "not" && token != "+" && token != "-" && isNonKeyId(token) == false && token != "(" && isLiteral(token) == false){
+			processError("error, illegal token in assignment statement");
+		}
+		express();
+		cout << "finishedExpress" << endl;
 		if(token != ";"){
-			processError("Error \";\" expected");
+			//cout << "DEBUG IN ASSIGNSTMT2: " << token << endl;
+			processError("Error \";\" expected to end assignment statement");
 		}
 		//THIS NEEDS TO BE PASTED IN MANY PLACES
 		string popOprt, lhs, rhs;
@@ -1046,11 +1087,7 @@ void Compiler :: assignStmt(){
 		rhs = popOperand();
 		lhs = popOperand();
 		code(popOprt, lhs, rhs);
-	} 
-	else {
-		//cout << "DEBUG ASSIGNMENT " << token << endl;
-		processError("NonKeyID epxected before \":=\" ");
-	}
+	
 }
 
 //fix this
@@ -1086,11 +1123,12 @@ void Compiler :: freeTemp(){
 string Compiler:: getTemp(){
 	string temp;
 	currentTempNo++;
-	temp = "T" + currentTempNo;
+	temp = "T" + to_string(currentTempNo); //DO NOT FORGET THE to_string()
 	if (currentTempNo > maxTempNo){
 		insert(temp, UNKNOWN, VARIABLE, "", NO, 1);
+		maxTempNo++;
 	}
-	maxTempNo++;
+
 	return temp;
 }
 
@@ -1203,24 +1241,27 @@ void Compiler :: emitAssignCode(string operand1, string operand2){
 	if(isTemporary(operand1)){
 		freeTemp();
 	}
-
 }
 
 //op2 + op1
 void Compiler :: emitAdditionCode(string operand1, string operand2){
+	
 	if(whichType(operand1) != INTEGER || whichType(operand2) != INTEGER){
 		processError("error only integers may be used with \"+\" ");
 	}
+	
 	//Call is temp
 	if(isTemporary(contentsOfAReg) && contentsOfAReg != operand1 && contentsOfAReg != operand2){
 		emit("", "mov", "[" + contentsOfAReg + "], eax", ";emit code to load operand2 into the A register" );
 		symbolTable.at(contentsOfAReg).setAlloc(YES);
 		contentsOfAReg = "";
 	}
+	
 	if(contentsOfAReg != operand1 && contentsOfAReg != operand2){
 		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
 		contentsOfAReg = operand2;
 	}
+	cout << "d" << endl;
 	//emit code for addition
 	if(contentsOfAReg == operand1){
 		emit("", "add", "eax, [" + symbolTable.at(operand2).getInternalName() + "]", "; fill this in" );
@@ -1228,7 +1269,7 @@ void Compiler :: emitAdditionCode(string operand1, string operand2){
 	else {
 		emit("", "add", "eax, [" + symbolTable.at(operand1).getInternalName() + "]", "; fill this in" );
 	}
-
+	cout << "e" << endl;
 	//if operands are temporaroy deassign them
 	if(isTemporary(operand1)){
 		freeTemp();
@@ -1236,12 +1277,15 @@ void Compiler :: emitAdditionCode(string operand1, string operand2){
 	if(isTemporary(operand2)){
 		freeTemp();
 	}
+	cout << "f" << endl;
 	//give a reg the next availbe temp
 	contentsOfAReg = getTemp();
+	cout << "a" << endl;
 	//make a reg an integer
 	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
-	
+	cout << "b" << endl;
 	pushOperand(contentsOfAReg);
+	cout << "c" << endl;
 }
 // op2 -  op1
 void Compiler :: emitSubtractionCode(string operand1, string operand2){
