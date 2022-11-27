@@ -388,7 +388,6 @@ void Compiler::insert(string externalName, storeTypes inType, modes inMode, stri
 				processError("illegal use of keyword");
 			} else {
 				if (isupper(name[0])) {
-					cout << "Temps created" << endl;
 					symbolTable.insert({ name, SymbolTableEntry(name, inType, inMode, inValue, inAlloc, inUnits) });
 				} else {
 					symbolTable.insert({ name, SymbolTableEntry(genInternalName(inType), inType, inMode, inValue, inAlloc, inUnits) });
@@ -563,7 +562,6 @@ void Compiler::beginEndStmt() // token should be "begin"
 	}
 	execStmts();
 	if (token != "end") {
-		cout << "I WANT TO DIE " << token << endl;
 		processError("keyword \"end\" expected");
 	}
 	if (nextToken() != ".") {
@@ -777,7 +775,7 @@ string Compiler :: genInternalName(storeTypes stype) const{
 /*----------------------- NEW STUFF FOR STAGE1 ----------------------*/
 
 /* --------------- PUSH AND POP OPERTAIONS ----------------------- */
-void Compiler::pushOperand(string name){ //push name onto operandStk//if name is a literal, also create a symbol table entry for it
+void Compiler::pushOperand(string name){ 
     if (isLiteral(name) && symbolTable.count(name) != 1){
         insert(name, whichType(name), CONSTANT, name, YES, 1);
     }
@@ -789,7 +787,6 @@ string Compiler::popOperand() {
 		operandStk.pop();
 		return topElement;
 	} else {
-		//cout << "DEBUG popOperand "<<operandStk.top() << endl; this caused a core dump
 		processError("compiler error; operand stack underflow operand");
 	}
 	return "";
@@ -797,7 +794,6 @@ string Compiler::popOperand() {
 
 //fix this for edge case, when you get something thst is already in the symbol table
 void Compiler :: pushOperator(string op){
-	cout << "DEBUG pushOPRTR: " << op << endl;
     operatorStk.push(op);
 }
 
@@ -809,7 +805,6 @@ string Compiler:: popOperator(){
         return topOfStack;
    }
    else{
-	   //cout << "DEBUG popOperator "<<operandStk.top() << endl;
         processError("compiler error; operator stack underflow operator");
    }
    //dummy return
@@ -819,10 +814,8 @@ string Compiler:: popOperator(){
 /* -------------------- END OF PUSH AND POP ---------------------------*/
 
 void Compiler :: part(){
-	cout << "partbegin" << endl;
 	if(token == "not"){
 		nextToken();
-		cout << "part1" << endl;
 		if(token == "("){
 			nextToken();
 			express();
@@ -834,7 +827,6 @@ void Compiler :: part(){
 			nextToken();
 		}
 		else if(isBoolean(token)){
-			cout << "partpushOperand1 " + token << endl;
 			pushOperand(token);
 			nextToken();
 		}
@@ -848,7 +840,6 @@ void Compiler :: part(){
 	}
 	else if(token == "+"){
 		nextToken();
-		cout << "part2" << endl;
 		if(token == "("){
 			nextToken();
 			express();
@@ -860,7 +851,6 @@ void Compiler :: part(){
 			nextToken();
 		}
 		else if(isInteger(token) || isNonKeyId(token)){
-			cout << "partpushOperand2 " + token << endl;
 			pushOperand(token);
 			nextToken();
 		}
@@ -870,25 +860,28 @@ void Compiler :: part(){
 	}
 	else if(token == "-"){
 		nextToken();
-		cout << "part3" << endl;
+		cout << "TESTING THE TOKEN<<<<<<<<< " << token << endl;
 		if(token == "("){
+			cout << "tetsing1" << endl;
 			nextToken();
 			express();
 			//nextToken();
 			if(token != ")"){
+				cout << "tetsing2" << endl;
 				processError("no closing parentheses to match opening.");
 			}
-			cout << "<<<<<<<<<<<<<< DID WE GET TO - IN PART " << endl << endl;
+			cout << "tetsing3" << endl;
 			code("neg", popOperand());
 			nextToken();
 		}
-		else if(isInteger(token)){
-			cout << "partpushOperand3 " + token << endl;
-			pushOperand("-" + token);
+				else if(isNonKeyId(token)){
+			cout << "Did we get here?" << endl;
+			code("neg", token);
 			nextToken();
 		}
-		else if(isNonKeyId(token)){
-			code("neg", token);
+		else if(isInteger(token) && isLiteral(token)){
+			cout << "tetsing4" << endl;
+			pushOperand("-" + token);
 			nextToken();
 		}
 		else{
@@ -897,7 +890,6 @@ void Compiler :: part(){
 	}
 	else if(token == "(")
 	{
-		cout << "part5" << endl;
 			nextToken();
 			express();
 			//nextToken();
@@ -907,20 +899,16 @@ void Compiler :: part(){
 			nextToken();
 	}
 	else if(isInteger(token) || isBoolean(token) || isNonKeyId(token)){
-		cout << "partpushOperand4 " + token << endl;
 		pushOperand(token);
-		cout << "part4" << endl;
 		nextToken();
 	}
 
 }
 void Compiler::factors() {
-	cout << "TESTING FROM FACTORS: " << token << endl;
 	if (token == "*" || token == "div" || token == "mod" || token == "and") {
 		pushOperator(token);
 
 		nextToken();
-		cout << "TOKEN IN FACTORS: " + token << endl;
 		part();
 		string popOprt, lhs, rhs;
 		popOprt = popOperator();
@@ -930,25 +918,17 @@ void Compiler::factors() {
 
 		factors();
 	}
-	cout << "factors end" << endl;
 }
 void Compiler::express() {
-	cout << "It got to express " << token << endl;
 	term();
-	cout << "call to term in express success" << endl;
 	expresses();
-	cout << "call to expresses in express success" << endl;
 }
 void Compiler::factor() {
 	part();
 	factors();
-	cout << "factor end" << endl;
 }
 void Compiler::term() {
-	cout << "made it to term " << token << endl;
-	cout << "top of operator stk bruh: " << operatorStk.top() << endl;
 	factor();
-	cout << "finished factor" << endl;
 	terms();
 }
 void Compiler::terms() {
@@ -969,7 +949,6 @@ void Compiler::terms() {
 void Compiler::expresses() {
 	if (token == "=" || token == "<>" || token == "<=" || token == ">=" || token == "<" || token == ">") {
 		pushOperator(token);
-		cout << "EXPRESS: " << token << endl;
 		nextToken();
 		term();
 		string popOprt, lhs, rhs;
@@ -1430,8 +1409,12 @@ void Compiler :: emitNegationCode(string operand1, string nothing){
 	if (isTemporary(contentsOfAReg) == false && contentsOfAReg != operand1) {
 		contentsOfAReg = ""; // deassign it
 	}
-	else{
-		emit("", "neg ", "eax", "; AReg = -AReg");
+	if(contentsOfAReg != operand1){
+		emit("", "mov", "eax,[" + symbolTable.at(operand1).getInternalName() + "]", "; AReg = " + operand1);
+		contentsOfAReg = operand1;
+	}
+	
+	emit("", "neg ", "eax", "; AReg = -AReg");
 		//if operands are temporaroy deassign them
 	if(isTemporary(operand1)){
 		freeTemp();
@@ -1442,7 +1425,7 @@ void Compiler :: emitNegationCode(string operand1, string nothing){
 	symbolTable.at(contentsOfAReg).setDataType(INTEGER);
 
 	pushOperand(contentsOfAReg); // push it to the stack
-	}
+
 }
 
 void Compiler :: emitNotCode(string operand1, string nothing){
