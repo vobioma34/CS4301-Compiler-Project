@@ -132,33 +132,42 @@ string Compiler :: nextToken() {
 			nextChar();
 		}
 		else if (isSpecialSymbol(ch)) {
-			token = ch;
-			nextChar();
+			
 
 			//handle compound operators here
-			if(token == ":"){
+			if(ch == ':'){
+				token += ch;
+				nextChar();
 				if(ch == '='){
-					token = token + ch;
+					token += ch;
 					nextChar();
 				}
 			}
 
-			if(token == "<"){
+			else if(ch == '<'){
+				token += ch;
+				nextChar();
 				if(ch == '='){
-					token = token + ch;
+					token += ch;
 					nextChar();
 				}
 				else if(ch == '>'){
-					token = token + ch;
+					token += ch;
 					nextChar();
 				}
 			}
 
-			if(token == ">"){
+			else if(ch == '>'){
+				token += ch;
+				nextChar();
 				if(ch == '='){
-					token = token + ch;
+					token += ch;
 					nextChar();
 				}
+			}
+			else {
+				token = ch;
+				nextChar();
 			}
 		}
 		else if (islower(ch)) {
@@ -272,7 +281,7 @@ bool Compiler :: isNonKeyId(string s) const {
 		*/
 	}
 
-	//dummy return to satify warning
+
 	return true;
 }
 //determines if s is an integer
@@ -386,7 +395,15 @@ void Compiler::insert(string externalName, storeTypes inType, modes inMode, stri
 				processError("symbol " + name + " is multiply defined");
 			} else if (isKeyword(name) && name != "true" && name != "false") {
 				processError("illegal use of keyword");
-			} else {
+			} 
+			else if( name == "FALSE" || name == "TRUE"){
+				if(name == "FALSE") {
+					symbolTable.insert({ "false", SymbolTableEntry("FALSE", inType, inMode, inValue, inAlloc, inUnits) });
+				}
+				else 
+					symbolTable.insert({ "true", SymbolTableEntry("TRUE", inType, inMode, inValue, inAlloc, inUnits) });
+			}
+			else{
 				if (isupper(name[0])) {
 					symbolTable.insert({ name, SymbolTableEntry(name, inType, inMode, inValue, inAlloc, inUnits) });
 				} else {
@@ -560,10 +577,13 @@ void Compiler::beginEndStmt() // token should be "begin"
 	if (token != "begin") {
 		processError("keyword \"begin\" expected");
 	}
-	execStmts();
-	if (token != "end") {
-		processError("keyword \"end\" expected");
+	nextToken();
+	if(isNonKeyId(token) || token == "read" || token == "write") 
+	{
+		execStmts();
 	}
+	if (token != "end" && !isNonKeyId(token) && token != "read" && token != "write")
+		processError("keyword \"end\" , NON_KEY_ID, \"read\", or \"write\" expected");
 	if (nextToken() != ".") {
 		processError("period expected");
 	}
@@ -733,6 +753,10 @@ void Compiler::emitStorage()
 			 else if ((*it).second.getValue() == "true"){
 				emit((*it).second.getInternalName(), "dd", "-1", ("; "+(*it).first));
 			 }
+			 else if(isNonKeyId((*it).second.getValue()) == true){ //THIS MAY BE A PROBLEM!!!!!!!!!!
+				 //string temp = (*it).second.getValue();
+				emit((*it).second.getInternalName(), "dd", "-1", ("; "+(*it).first));
+			 }
 			 else {
 				emit((*it).second.getInternalName(), "dd", (*it).second.getValue(), ("; "+(*it).first));
 
@@ -776,10 +800,18 @@ string Compiler :: genInternalName(storeTypes stype) const{
 
 /* --------------- PUSH AND POP OPERTAIONS ----------------------- */
 void Compiler::pushOperand(string name){ 
-    if (isLiteral(name) && symbolTable.count(name) != 1){
-        insert(name, whichType(name), CONSTANT, name, YES, 1);
-    }
-    operandStk.push(name);
+   if(isLiteral(name) && symbolTable.count(name) == 0) {
+		if(name == "true")
+			insert("TRUE", BOOLEAN, CONSTANT, name, YES, 1);
+		else if(name == "false")
+			insert("FALSE", BOOLEAN, CONSTANT, name, YES, 1);
+		else
+			insert(name, INTEGER, CONSTANT, name, YES, 1);
+	}
+	else if(!(isLiteral(name)) && symbolTable.count(name) == 0) {
+		processError("reference to undefined symbol: " + name);
+	}
+	operandStk.push(name);
 }
 string Compiler::popOperand() {
 	if (!operandStk.empty()) {
@@ -827,7 +859,7 @@ void Compiler :: part(){
 			nextToken();
 		}
 		else if(isBoolean(token)){
-			pushOperand(token);
+			pushOperand((token == "true" ? "false" : "true")); 
 			nextToken();
 		}
 		else if(isNonKeyId(token)){
@@ -835,7 +867,7 @@ void Compiler :: part(){
 			nextToken();
 		}
 		else{
-			processError("a non boolean operator cannot follow \"not\" goofy");
+			processError("Expected NON_KEY_ID, '(', or boolean literal after \"not\"");
 		}
 	}
 	else if(token == "+"){
@@ -855,7 +887,7 @@ void Compiler :: part(){
 			nextToken();
 		}
 		else{
-			processError("must have an integer valte after \'+\' GOPFY");
+			processError("must have an integer value after '+'");
 		}
 	}
 	else if(token == "-"){
@@ -948,6 +980,7 @@ void Compiler::terms() {
 }
 void Compiler::expresses() {
 	if (token == "=" || token == "<>" || token == "<=" || token == ">=" || token == "<" || token == ">") {
+		cout << "expresses progress check " << token << endl;
 		pushOperator(token);
 		nextToken();
 		term();
@@ -955,6 +988,7 @@ void Compiler::expresses() {
 		popOprt = popOperator();
 		lhs = popOperand();
 		rhs = popOperand();
+		cout << "TESTING FROM EXPRESSES " << popOprt << " " << lhs << " " << rhs << endl;
 		code(popOprt, lhs, rhs);
 		expresses();
 	}
@@ -1073,6 +1107,9 @@ void Compiler :: execStmt(){
 	else if (isNonKeyId(token)){ //dont jump ahead too far
 		assignStmt();
 	}
+	else{
+		processError("non_key_id, \"read\", or \"write\" expected");
+	}
 }
 
 //also fix this
@@ -1135,7 +1172,7 @@ void Compiler :: emitReadCode(string operand, string operand2) {
 				processError("reference to undefined symbol");
 			}
 			else if (whichType(name) == BOOLEAN) {
-				processError("cannot read varaibles of this type (boolean)");
+				processError("can't read variables of this type");
 			}
 			else if (symbolTable.at(name).getMode() != VARIABLE){
 				processError("attempting to read to a read-only location");
@@ -1212,7 +1249,7 @@ void Compiler :: emitAdditionCode(string operand1, string operand2){
       processError("binary '+' requires integer operands");
    }
    if (isTemporary(contentsOfAReg) == true && (contentsOfAReg != operand1 && contentsOfAReg != operand2)) {
-      emit("", "mov", "[" +symbolTable.at(contentsOfAReg).getInternalName() + "],eax", "; deassign AReg" ); // store that temp into memory
+      emit("", "mov", "[" +symbolTable.at(contentsOfAReg).getInternalName() + "],eax", "; deassign AReg" ); // deassign AReg
 		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
 		contentsOfAReg = ""; // deassign it
    }
@@ -1252,7 +1289,7 @@ void Compiler :: emitSubtractionCode(string operand1, string operand2){
 		processError("error only integers may be used with \"-\" ");
 	}
 	//Call is temp
-	if(isTemporary(contentsOfAReg) && contentsOfAReg != operand1 && contentsOfAReg != operand2){
+	if(isTemporary(contentsOfAReg)  && contentsOfAReg != operand2){
 		emit("", "mov", "[" + contentsOfAReg + "],eax", "; deassign AReg");
 		symbolTable.at(contentsOfAReg).setAlloc(YES);
 		contentsOfAReg = "";
@@ -1286,7 +1323,7 @@ void Compiler:: emitMultiplicationCode(string operand1, string operand2) {
       processError("Only integers may be used with '*' operator");
    }
    if (isTemporary(contentsOfAReg) == true && (contentsOfAReg != operand1 && contentsOfAReg != operand2)) {
-      emit("", "mov", "[" +symbolTable.at(contentsOfAReg).getInternalName() + "],eax", ";store temp in memory" ); // store that temp into memory
+      emit("", "mov", "[" +symbolTable.at(contentsOfAReg).getInternalName() + "],eax", "; deassign AReg" ); // deassign AReg
 		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
 		contentsOfAReg = ""; // deassign it
    }
@@ -1399,10 +1436,10 @@ void Compiler :: emitModuloCode(string operand1, string operand2) {
 void Compiler :: emitNegationCode(string operand1, string nothing){
 	cout << "<<<<<<<<<<<<<< WE MADE IT TO NEGATION CODE" << operand1 << endl;
 	if (whichType(operand1) != INTEGER) {
-		processError("illegal type");
+		processError("Only integer values may be used with negation.");
 	}
 	if (isTemporary(contentsOfAReg) && contentsOfAReg != operand1) {
-		emit("", "mov", "[" + contentsOfAReg + "],eax", "; store that temp into memory");
+		emit("", "mov", "[" + contentsOfAReg + "],eax", "; deassign AReg");
 		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
 		contentsOfAReg = "";
 	}
@@ -1433,14 +1470,17 @@ void Compiler :: emitNotCode(string operand1, string nothing){
 		processError("Unary 'not' may only be used with boolean operand");
 	}
 	if (isTemporary(contentsOfAReg) && contentsOfAReg != operand1) {
-		emit("", "mov","[" + contentsOfAReg + "],eax", "; store that temp into memory");
+		emit("", "mov","[" + contentsOfAReg + "],eax", "; deassign AReg");
 		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
 		contentsOfAReg = "";
 	}
 	if (isTemporary(contentsOfAReg) == false && contentsOfAReg != operand1) {
 		contentsOfAReg = ""; // deassign it
 	}
-	else{
+	if(contentsOfAReg != operand1){
+		emit("", "mov", "eax,[" + symbolTable.at(operand1).getInternalName() + "]", "; AReg = " + operand1);
+		contentsOfAReg = operand1;
+	}
 		emit("", "not", "eax", "; AReg = !AReg");
 		//if operands are temporaroy deassign them
 	if(isTemporary(operand1)){
@@ -1453,7 +1493,6 @@ void Compiler :: emitNotCode(string operand1, string nothing){
 	symbolTable.at(contentsOfAReg).setDataType(BOOLEAN);
 
 	pushOperand(contentsOfAReg); // push it to the stack
-	}
 }
 
 
@@ -1463,11 +1502,11 @@ void Compiler :: emitEqualityCode(string operand1, string operand2){
 	label2 = getLabel();
 	// types of operands are not the same
 	if (whichType(operand1) != whichType(operand2)) {
-		processError("incompatible types");
+		processError("Equality operator must ne used with matching data types");
 	}
 	// if the A Register holds a temp not operand1 nor operand2
 	if (isTemporary(contentsOfAReg) && (contentsOfAReg != operand1 && contentsOfAReg != operand2)) {
-		emit("", "mov", "[" + contentsOfAReg + "],eax", "; store that temp into memory"); // store the temp into memory
+		emit("", "mov", "[" + contentsOfAReg + "],eax", "; deassign AReg"); // store the temp into memory
 		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
 		contentsOfAReg = ""; // deassign it
 	}
@@ -1476,15 +1515,21 @@ void Compiler :: emitEqualityCode(string operand1, string operand2){
 		contentsOfAReg = ""; // deassign it
 	}
 	if (contentsOfAReg != operand1 && contentsOfAReg != operand2) {
-		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax"); // load operand2 into the A register
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", "; AReg = " + operand2); // load operand2 into the A register
 	}
-	emit("", "cmp", "eax, [" + symbolTable.at(operand1).getInternalName() + "]","; fill this in"); // perform a register-memory compare
-	emit("", "je", label1, ""); // jump if equal to the next available Ln (call getLabel)
-	emit("", "mov", "eax, [FALSE]", "; load FALSE"); //  load FALSE into the A register
-	emit("", "jmp", label2, "; unconditional jump"); // perform an unconditional jump to the next label (call getLabel should be L(n+1))
-	emit(label1, "", "", ""); // emit code to label the next instruction with the first acquired label Ln
-	emit("", "mov", "eax, [TRUE]", "; load TRUE"); //  load TRUE into the A register
-	emit(label2, "", "", "");
+	if(contentsOfAReg == operand1){
+		emit("", "cmp", "eax,[" + symbolTable.at(operand2).getInternalName() + "]","; compare " + operand1 + " and " + operand2);
+	}
+	else{
+		emit("", "cmp", "eax,[" + symbolTable.at(operand1).getInternalName() + "]","; compare " + operand2 + " and " + operand1);
+	}
+	
+	emit("", "je", label1, "; if " + operand2 + " = " + operand1 + " then jump to set eax to TRUE" ); // jump if equal to the next available Ln (call getLabel)
+	emit("", "mov", "eax,[FALSE]", "; else set eax to FALSE"); //  load FALSE into the A register
+	emit("", "jmp", label2, "; unconditionally jump"); // perform an unconditional jump to the next label (call getLabel should be L(n+1))
+	emit(label1 + ":", "", "", ""); // emit code to label the next instruction with the first acquired label Ln
+	emit("", "mov", "eax,[TRUE]", "; set eax to TRUE"); //  load TRUE into the A register
+	emit(label2 + ":", "", "", "");
 	// inserting true and false into the symbol table
 	if (symbolTable.count("true") == 0) {
 		symbolTable.insert({ "true", SymbolTableEntry("TRUE", BOOLEAN, CONSTANT, "-1", YES, 1) });
@@ -1513,11 +1558,11 @@ void Compiler :: emitInequalityCode(string operand1, string operand2) {
 	label2 = getLabel();
 	// types of operands are not the same
 	if (whichType(operand1) != whichType(operand2)) {
-		processError("incompatible types");
+		processError("Inequality operator must be used with matching types.");
 	}
 	// if the A Register holds a temp not operand1 nor operand2
 	if (isTemporary(contentsOfAReg) && (contentsOfAReg != operand1 && contentsOfAReg != operand2)) {
-		emit("", "mov", "[" + contentsOfAReg + "],eax", "; store that temp into memory"); // store the temp into memory
+		emit("", "mov", "[" + contentsOfAReg + "],eax", "; deassign AReg"); // store the temp into memory
 		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
 		contentsOfAReg = ""; // deassign it
 	}
@@ -1526,15 +1571,15 @@ void Compiler :: emitInequalityCode(string operand1, string operand2) {
 		contentsOfAReg = ""; // deassign it
 	}
 	if (contentsOfAReg != operand1 && contentsOfAReg != operand2) {
-		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax"); // load operand2 into the A register
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", "; AReg = " + operand2); // load operand2 into the A register
 	}
-	emit("", "cmp", "eax, [" + symbolTable.at(operand1).getInternalName() + "]","; fill this in"); // perform a register-memory compare
-	emit("", "jne", label1, ""); // jump if equal to the next available Ln (call getLabel)
-	emit("", "mov", "eax, [FALSE]", "; load FALSE"); //  load FALSE into the A register
-	emit("", "jmp", label2, "; unconditional jump"); // perform an unconditional jump to the next label (call getLabel should be L(n+1))
-	emit(label1, "", "", ""); // emit code to label the next instruction with the first acquired label Ln
-	emit("", "mov", "eax, [TRUE]", "; load TRUE"); //  load TRUE into the A register
-	emit(label2, "", "", "");
+	emit("", "cmp", "eax,[" + symbolTable.at(operand2).getInternalName() + "]","; compare " + operand1 + " and " + operand2); // perform a register-memory compare
+	emit("", "jne", label1, "; if " + operand2 + " <> " + operand1 +" then jump to set eax to TRUE"); // jump if equal to the next available Ln (call getLabel)
+	emit("", "mov", "eax,[FALSE]", "; else set eax to FALSE"); //  load FALSE into the A register
+	emit("", "jmp", label2, "; unconditionally jump"); // perform an unconditional jump to the next label (call getLabel should be L(n+1))
+	emit(label1 + ":", "", "", ""); // emit code to label the next instruction with the first acquired label Ln
+	emit("", "mov", "eax,[TRUE]", "; set eax to TRUE"); //  load TRUE into the A register
+	emit(label2 + ":", "", "", "");
 	// inserting true and false into the symbol table
 	if (symbolTable.count("true") == 0) {
 		symbolTable.insert({ "true", SymbolTableEntry("TRUE", BOOLEAN, CONSTANT, "-1", YES, 1) });
@@ -1558,21 +1603,20 @@ void Compiler :: emitInequalityCode(string operand1, string operand2) {
 }
 
 void Compiler :: emitOrCode(string operand1, string operand2) {
-	string label1 = getLabel();
-	string label2 = getLabel();
 	if (whichType(operand1) != BOOLEAN || whichType(operand2) != BOOLEAN) {
 		processError("illegal type");
 	}
 	if (isTemporary(contentsOfAReg) && contentsOfAReg != operand1 && contentsOfAReg != operand2) {
-		emit("", "mov", "[" + contentsOfAReg + "],eax", "; store that temp into memory");
+		emit("", "mov", "[" + contentsOfAReg + "],eax", "; deassign AReg");
 		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
 		contentsOfAReg = "";
 	}
 	if (isTemporary(contentsOfAReg) == false && contentsOfAReg != operand1 && contentsOfAReg != operand2) {
 		contentsOfAReg = ""; // deassign it
 	}
-	if (contentsOfAReg != operand1 || contentsOfAReg != operand2) {
+	if (contentsOfAReg != operand1 && contentsOfAReg != operand2) {
 		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", "; AReg = " + operand2);
+		contentsOfAReg = operand2;
 	}
 	if (contentsOfAReg == operand1) {
 		emit("", "or", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", "; AReg = " + operand1 + " or " + operand2);
@@ -1598,10 +1642,10 @@ void Compiler :: emitOrCode(string operand1, string operand2) {
 
 void Compiler :: emitAndCode(string operand1, string operand2){
 	if(whichType(operand1) != BOOLEAN || whichType(operand2) != BOOLEAN){
-		processError("error only booleans may be used with \"and\" ");
+		processError("binary 'and' requires boolean operands");
 	}
 	if(isTemporary(contentsOfAReg) && contentsOfAReg != operand1 && contentsOfAReg != operand2){
-		emit("", "mov","[" + contentsOfAReg + "],eax", ";emit code to load operand2 into the A register" );
+		emit("", "mov","[" + contentsOfAReg + "],eax", "; deassign AReg" );
 		symbolTable.at(contentsOfAReg).setAlloc(YES);
 		contentsOfAReg = "";
 	}
@@ -1610,7 +1654,7 @@ void Compiler :: emitAndCode(string operand1, string operand2){
 		contentsOfAReg = operand2;
 	}
 	if(contentsOfAReg == operand1){
-		emit("", "and ", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", "; AReg = " + operand1 + " and first " + operand2);
+		emit("", "and ", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", "; AReg = " + operand1 + " and " + operand2);
 	}
 	else{
 		//emit("", "mov ", "eax, [" + operand1 +"]", ";Areg  = " + operand1 );
@@ -1641,23 +1685,22 @@ void Compiler :: emitLessThanCode(string operand1, string operand2){
 	}
 	//Call is temp
 	if(isTemporary(contentsOfAReg) && contentsOfAReg != operand1 && contentsOfAReg != operand2){
-		emit("", "mov", "[" + contentsOfAReg + "],eax", ";emit code to load operand2 into the A register" );
+		emit("", "mov", "[" + contentsOfAReg + "],eax", "; deassign AReg" );
 		symbolTable.at(contentsOfAReg).setAlloc(YES);
 		contentsOfAReg = "";
 	}
 	if(contentsOfAReg != operand1 && contentsOfAReg != operand2){
-		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", "; AReg = " + operand2);
 		contentsOfAReg = operand2;
 	}
-	else{
-		emit("", "cmp ", "eax, [" + symbolTable.at(operand1).getInternalName() + "]", ";compare eax and " +symbolTable.at(operand1).getInternalName());
-		emit("", "jl ", label1, ";if eax is less than" + symbolTable.at(operand1).getInternalName());
-		emit("", "jmp ", label2, ";if eax is not less than" +symbolTable.at(operand1).getInternalName());
+		emit("", "cmp ", "eax,[" + symbolTable.at(operand1).getInternalName() + "]", "; compare " + operand2 + " and " + operand1);
+		emit("", "jl ", label1, "; if " + operand2 + " < " + operand1 + " then jump to set eax to TRUE");
+		emit("", "mov ", "eax,[FALSE]", "; else set eax to FALSE");
+		emit("", "jmp ", label2, "; unconditionally jump");
 		emit(label1 + ":", "", "" ,"");
-		emit("", "mov ", "eax, [true]", ";assign eax value of true");
+		emit("", "mov ", "eax,[TRUE]", "; set eax to TRUE");
 		emit(label2 + ":", "", "" ,"");
-		emit("", "mov ", "eax, [false]", ";assign eax value of false");
-	}
+	
 
 	//if operands are temporaroy deassign them
 	if(isTemporary(operand1)){
@@ -1684,23 +1727,22 @@ void Compiler :: emitLessThanOrEqualToCode(string operand1, string operand2){
 	}
 	//Call is temp
 	if(isTemporary(contentsOfAReg) && contentsOfAReg != operand1 && contentsOfAReg != operand2){
-		emit("", "mov", "[" + contentsOfAReg + "],eax", ";emit code to load operand2 into the A register" );
+		emit("", "mov", "[" + contentsOfAReg + "],eax", "; deassign AReg" );
 		symbolTable.at(contentsOfAReg).setAlloc(YES);
 		contentsOfAReg = "";
 	}
 	if(contentsOfAReg != operand1 && contentsOfAReg != operand2){
-		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax");
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", "; AReg = " + operand2);
 		contentsOfAReg = operand2;
 	}
-	else{
-		emit("", "cmp ", "eax, [" + symbolTable.at(operand1).getInternalName() + "]", ";compare eax and " +symbolTable.at(operand1).getInternalName());
-		emit("", "jle ", label1, ";if eax is less than" + symbolTable.at(operand1).getInternalName());
-		emit("", "jmp ", label2, ";if eax is not less than" +symbolTable.at(operand1).getInternalName());
+		emit("", "cmp ", "eax,[" + symbolTable.at(operand1).getInternalName() + "]", "; compare " + operand2 + " and " + operand1);
+		emit("", "jle ", label1, "; if " + operand2 + " <= " +operand1 + " then jump to set eax to TRUE" );
+		emit("", "mov ", "eax,[FALSE]", "; else set eax to FALSE");
+		emit("", "jmp ", label2, "; unconditionally jump");
 		emit(label1 + ":", "", "" ,"");
-		emit("", "mov ", "eax, [true]", ";assign eax value of true");
+		emit("", "mov ", "eax,[TRUE]", "; set eax to TRUE");
 		emit(label2 + ":", "", "" ,"");
-		emit("", "mov ", "eax, [false]", ";assign eax value of false");
-	}
+		
 
 	//if operands are temporaroy deassign them
 	if(isTemporary(operand1)){
@@ -1719,18 +1761,16 @@ void Compiler :: emitLessThanOrEqualToCode(string operand1, string operand2){
 }
 
 void Compiler :: emitGreaterThanCode(string operand1, string operand2) {
-	cout << "KANYEEEEEEEEEEEEEEEEE " << operand1 << " AND " << operand2 << " contents of areg: " << contentsOfAReg<<endl; 
 	string label1, label2;
 	label1 = getLabel();
 	label2 = getLabel();
 	// types of operands are not the same
 	if (whichType(operand1) != INTEGER || whichType(operand2) != INTEGER) {
-		cout << "-----------GREATER THAN DEBUG ----------------------" << whichType(operand1) << "       " << whichType(operand2) << endl << endl;
 		processError("Only integers may be used with '>'");
 	}
 	// if the A Register holds a temp not operand1 nor operand2
 	if (isTemporary(contentsOfAReg) && (contentsOfAReg != operand1 && contentsOfAReg != operand2)) {
-		emit("", "mov", "[" + contentsOfAReg + "],eax", "; store that temp into memory"); // store the temp into memory
+		emit("", "mov", "[" + contentsOfAReg + "],eax", "; deassign AReg"); // store the temp into memory
 		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
 		contentsOfAReg = ""; // deassign it
 	}
@@ -1739,7 +1779,7 @@ void Compiler :: emitGreaterThanCode(string operand1, string operand2) {
 		contentsOfAReg = ""; // deassign it
 	}
 	if (contentsOfAReg != operand1 && contentsOfAReg != operand2) {
-		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eaxzzs"); // load operand2 into the A register
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", "; AReg = " + operand2); // load operand2 into the A register
 	}
 	emit("", "cmp", "eax,[" + symbolTable.at(operand1).getInternalName() + "]","; compare " + operand2 + " and " + operand1); // perform a register-memory compare
 	emit("", "jg", label1, "; if " + operand2 + " > " + operand1 + " then jump to set eax to TRUE"); // jump if greater than and the next available Ln (call getLabel)
@@ -1776,12 +1816,11 @@ void Compiler :: emitGreaterThanOrEqualToCode(string operand1, string operand2) 
 	label2 = getLabel();
 	// types of operands are not the same
 	if (whichType(operand1) != INTEGER || whichType(operand2) != INTEGER) {
-		cout << "THIS BETTER NOT BE THE PROBLEM BRO__________________________" << endl;
 		processError("Only integers may be used with '>='");
 	}
 	// if the A Register holds a temp not operand1 nor operand2
 	if (isTemporary(contentsOfAReg) && (contentsOfAReg != operand1 && contentsOfAReg != operand2)) {
-		emit("", "mov", "[" + contentsOfAReg + "],eax", "; store that temp into memory"); // store the temp into memory
+		emit("", "mov", "[" + contentsOfAReg + "],eax", "; deassign AReg"); // store the temp into memory
 		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
 		contentsOfAReg = ""; // deassign it
 	}
@@ -1790,14 +1829,15 @@ void Compiler :: emitGreaterThanOrEqualToCode(string operand1, string operand2) 
 		contentsOfAReg = ""; // deassign it
 	}
 	if (contentsOfAReg != operand1 && contentsOfAReg != operand2) {
-		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", ";move contents of variables to eax"); // load operand2 into the A register
+		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", "; AReg = " + operand2); // load operand2 into the A register
+		contentsOfAReg = operand2;
 	}
-	emit("", "cmp", "eax, [" + symbolTable.at(operand1).getInternalName() + "]","; fill this in"); // perform a register-memory compare
-	emit("", "jge", label1, ""); // jump if greater than or equal to the next available Ln (call getLabel)
-	emit("", "mov", "eax, [FALSE]", "; load FALSE"); //  load FALSE into the A register
-	emit("", "jmp", label2, "; unconditional jump"); // perform an unconditional jump to the next label (call getLabel should be L(n+1))
+	emit("", "cmp", "eax,[" + symbolTable.at(operand1).getInternalName() + "]","; compare " + operand2 + " and " + operand1); // perform a register-memory compare
+	emit("", "jge", label1, "; if " + operand2 + " >= " + operand1 + " then jump to set eax to TRUE"); // jump if greater than or equal to the next available Ln (call getLabel)
+	emit("", "mov", "eax,[FALSE]", "; else set eax to FALSE"); //  load FALSE into the A register
+	emit("", "jmp", label2, "; unconditionally jump"); // perform an unconditional jump to the next label (call getLabel should be L(n+1))
 	emit(label1 + ":", "", "", ""); // emit code to label the next instruction with the first acquired label Ln
-	emit("", "mov", "eax, [TRUE]", "; load TRUE"); //  load TRUE into the A register
+	emit("", "mov", "eax,[TRUE]", "; set eax to TRUE"); //  load TRUE into the A register
 	emit(label2 + ":", "", "", "");
 	// inserting true and false into the symbol table
 	if (symbolTable.count("true") == 0) {
