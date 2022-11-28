@@ -623,7 +623,7 @@ void Compiler :: varStmts(){
 		varStmts();
 	}
 }
-//come back to this and add cuntion calls for emit
+//come back to this and add funtion calls for emit
 void Compiler :: code(string op, string operand1, string operand2) {
 	if(op == "program"){
 		emitPrologue(operand1);
@@ -806,7 +806,7 @@ void Compiler::pushOperand(string name){
 		else if(name == "false")
 			insert("FALSE", BOOLEAN, CONSTANT, name, YES, 1);
 		else
-			insert(name, INTEGER, CONSTANT, name, YES, 1);
+			insert(name, whichType(name), CONSTANT, name, YES, 1);
 	}
 	else if(!(isLiteral(name)) && symbolTable.count(name) == 0) {
 		processError("reference to undefined symbol: " + name);
@@ -892,27 +892,21 @@ void Compiler :: part(){
 	}
 	else if(token == "-"){
 		nextToken();
-		cout << "TESTING THE TOKEN<<<<<<<<< " << token << endl;
 		if(token == "("){
-			cout << "tetsing1" << endl;
 			nextToken();
 			express();
 			//nextToken();
 			if(token != ")"){
-				cout << "tetsing2" << endl;
 				processError("no closing parentheses to match opening.");
 			}
-			cout << "tetsing3" << endl;
 			code("neg", popOperand());
 			nextToken();
-		}
-				else if(isNonKeyId(token)){
-			cout << "Did we get here?" << endl;
+			}
+			else if(isNonKeyId(token)){
 			code("neg", token);
 			nextToken();
 		}
 		else if(isInteger(token) && isLiteral(token)){
-			cout << "tetsing4" << endl;
 			pushOperand("-" + token);
 			nextToken();
 		}
@@ -980,7 +974,6 @@ void Compiler::terms() {
 }
 void Compiler::expresses() {
 	if (token == "=" || token == "<>" || token == "<=" || token == ">=" || token == "<" || token == ">") {
-		cout << "expresses progress check " << token << endl;
 		pushOperator(token);
 		nextToken();
 		term();
@@ -988,7 +981,6 @@ void Compiler::expresses() {
 		popOprt = popOperator();
 		lhs = popOperand();
 		rhs = popOperand();
-		cout << "TESTING FROM EXPRESSES " << popOprt << " " << lhs << " " << rhs << endl;
 		code(popOprt, lhs, rhs);
 		expresses();
 	}
@@ -1066,14 +1058,11 @@ void Compiler :: readStmt(){
 }
 
 void Compiler :: assignStmt(){
-	cout << "LATEST TESTING: " << token << endl;
-
 
 		pushOperand(token);
 		nextToken();
 
 		if(token != ":="){
-			//cout << "DEBUG IN ASSIGNSTMT: " << token << endl;
 			processError("cannot have an assignment statment without \" := \" ");
 		}
 		pushOperator(token);
@@ -1082,9 +1071,7 @@ void Compiler :: assignStmt(){
 			processError("error, illegal token in assignment statement");
 		}
 		express();
-		cout << "finishedExpress!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 		if(token != ";"){
-			//cout << "DEBUG IN ASSIGNSTMT2: " << token << endl;
 			processError("one of \"*\", \"and\", \"div\", \"mod\", \")\", \"+\", \"-\", \";\", \"<\", \"<=\", \"<>\", \"=\", \">\", \">=\", or \"or\" expected");
 		}
 		
@@ -1093,7 +1080,6 @@ void Compiler :: assignStmt(){
 		lhs = popOperand();
 		rhs = popOperand();
 		code(popOprt, lhs, rhs);
-
 }
 
 //fix this
@@ -1217,7 +1203,6 @@ void Compiler :: emitWriteCode(string operand, string operand2) {
 
 //op2 = op1
 void Compiler :: emitAssignCode(string operand1, string operand2){
-   //cout << "ASSIGN CODE DEBUG!!!!!!!!!!!!!!!!!" << isLiteral(operand2) << " BRUH " <<whichType(operand1) << endl;
    if (whichType(operand1) != whichType(operand2)) {
       processError("incompatible types for operator ':='");
    }
@@ -1228,23 +1213,18 @@ void Compiler :: emitAssignCode(string operand1, string operand2){
       return;
    }
    if (operand1 != contentsOfAReg) {
-	    //cout << "ASSIGN CODE DEBUG!!!!!!!!!!!!!!!!!" << isLiteral(operand2) << " BRUH " <<whichType(operand1) << endl;
 	  emit("", "mov", "eax,[" + symbolTable.at(operand1).getInternalName() + "]", "; AReg = " + operand1);
-	   contentsOfAReg = operand1;
+	  contentsOfAReg = operand1;
    }
    emit("", "mov", "[" + symbolTable.at(operand2).getInternalName() + "],eax", "; " + operand2 + " = AReg"  );
    contentsOfAReg = operand2;
    if (isTemporary(operand1) == true) {
       freeTemp();
    }
-
-   //emit("Done","" , "", ""  );
 }
 
 //op2 + op1
 void Compiler :: emitAdditionCode(string operand1, string operand2){
-
-	cout << "\nadd ops " << operand1 << " " << operand2 << endl;
    if (whichType(operand1) != INTEGER || whichType(operand2) != INTEGER) { //maybe use symbol tabel.at
       processError("binary '+' requires integer operands");
    }
@@ -1323,7 +1303,7 @@ void Compiler:: emitMultiplicationCode(string operand1, string operand2) {
       processError("Only integers may be used with '*' operator");
    }
    if (isTemporary(contentsOfAReg) == true && (contentsOfAReg != operand1 && contentsOfAReg != operand2)) {
-      emit("", "mov", "[" +symbolTable.at(contentsOfAReg).getInternalName() + "],eax", "; deassign AReg" ); // deassign AReg
+		emit("", "mov", "[" +symbolTable.at(contentsOfAReg).getInternalName() + "],eax", "; deassign AReg" ); // deassign AReg
 		symbolTable.at(contentsOfAReg).setAlloc(YES); // change the allocation to YES
 		contentsOfAReg = ""; // deassign it
    }
@@ -1332,10 +1312,8 @@ void Compiler:: emitMultiplicationCode(string operand1, string operand2) {
    }
    if (contentsOfAReg != operand1 && contentsOfAReg != operand2) { // Neither of the operands equal the contents of the A register
       emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", "; AReg = " + operand2); // emit code to load operand2 into the A register
-
 	  contentsOfAReg = operand2;
    }
-
 	//emit code for multiplication
 	if(contentsOfAReg == operand1){
 		emit("", "imul", "dword [" + symbolTable.at(operand2).getInternalName() + "]", "; AReg = " + operand1 + " * " + operand2);
@@ -1434,7 +1412,6 @@ void Compiler :: emitModuloCode(string operand1, string operand2) {
 
 //these  may need more stuff added, such as mov eax, operandX
 void Compiler :: emitNegationCode(string operand1, string nothing){
-	cout << "<<<<<<<<<<<<<< WE MADE IT TO NEGATION CODE" << operand1 << endl;
 	if (whichType(operand1) != INTEGER) {
 		processError("Only integer values may be used with negation.");
 	}
@@ -1573,7 +1550,7 @@ void Compiler :: emitInequalityCode(string operand1, string operand2) {
 	if (contentsOfAReg != operand1 && contentsOfAReg != operand2) {
 		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", "; AReg = " + operand2); // load operand2 into the A register
 	}
-	emit("", "cmp", "eax,[" + symbolTable.at(operand2).getInternalName() + "]","; compare " + operand1 + " and " + operand2); // perform a register-memory compare
+	emit("", "cmp", "eax,[" + symbolTable.at(operand1).getInternalName() + "]","; compare " + operand2 + " and " + operand1); // perform a register-memory compare
 	emit("", "jne", label1, "; if " + operand2 + " <> " + operand1 +" then jump to set eax to TRUE"); // jump if equal to the next available Ln (call getLabel)
 	emit("", "mov", "eax,[FALSE]", "; else set eax to FALSE"); //  load FALSE into the A register
 	emit("", "jmp", label2, "; unconditionally jump"); // perform an unconditional jump to the next label (call getLabel should be L(n+1))
