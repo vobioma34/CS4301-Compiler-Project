@@ -1,8 +1,8 @@
 //Esai Barron and Victor Obioma
 //CS 4301
-//Stage 1
+//Stage 2
 
-#include <stage1.h>
+#include <stage2.h>
 #include <iostream>
 #include <ctime>
 #include <string>
@@ -574,6 +574,7 @@ void Compiler::progStmt() // token should be "program"
 }
 void Compiler::beginEndStmt() // token should be "begin"
 {
+	// Must be modify for stage2 material
 	if (token != "begin") {
 		processError("keyword \"begin\" expected");
 	}
@@ -625,6 +626,7 @@ void Compiler :: varStmts(){
 }
 //come back to this and add funtion calls for emit
 void Compiler :: code(string op, string operand1, string operand2) {
+	// Need to add some else if for stage2
 	if(op == "program"){
 		emitPrologue(operand1);
 	}
@@ -699,6 +701,22 @@ void Compiler :: code(string op, string operand1, string operand2) {
 	else if (op == ">=") {
 		// call to the emitGreaterThanOrEqualCode() function, get these from victor
 		emitGreaterThanOrEqualToCode(operand1, operand2);
+	} 
+	else if (op == "while") {
+		// call to the emitWhileCode() function
+		emitWhileCode(operand1, operand2);
+	} 
+	else if (op == "do") {
+		// call to the emitDoCode() function
+		emitDoCode(operand1, operand2);
+	}
+	else  if (op == "post_while") { // the string may be incorrect but it's a start
+		// call to the emitPostWhileCode() function
+		emitPostWhileCode(operand1, operand2);
+	}
+	else if (op == "repeat") {
+		// call to the emitRepeatCode() function
+		emitRepeatCode(operand1, operand2);
 	}
 	else {
 		processError("compiler error since function code should not be called with illegal arguments");
@@ -1082,7 +1100,6 @@ void Compiler :: assignStmt(){
 		code(popOprt, lhs, rhs);
 }
 
-//fix this
 void Compiler :: execStmt(){
 	if(token == "read"){
 		readStmt();
@@ -1092,6 +1109,21 @@ void Compiler :: execStmt(){
 	}
 	else if (isNonKeyId(token)){ //dont jump ahead too far
 		assignStmt();
+	} 
+	else if (token == "if") {
+		ifStmt(); // call to the ifStmt function 
+	}
+	else if (token == "while") {
+		whileStmt(); // call to the whileStmt function
+	}
+	else if (token == "repeat") {
+		repeatStmt(); // call to the repeatStmt function
+	}
+	else if (token == ";") {
+		nullStmt(); // call to the nullStmt function
+	}
+	else if (token == "begin") {
+		beginEndStmt();
 	}
 	else{
 		processError("non_key_id, \"read\", or \"write\" expected");
@@ -1844,4 +1876,66 @@ string Compiler::getLabel() {
 	labelCount++; // increment the number of labels by 1
 	currentLabel = ".L" + to_string(labelCount);
 	return currentLabel; // Return the current label
+}
+/*------------------ STAGE 2 STUFF -------------------------*/
+bool Compiler :: isLabel(string s) const {
+	// Copy and pasted from the isTemporary() function with the appropriate modifications
+	if(s.at(0) == 'L'){
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+void Compiler :: ifStmt() {
+ //...
+}
+void Compiler :: elsePt() {
+ //...
+}
+void Compiler :: whileStmt() {
+	if (token == "while") {
+		code("while");
+		express();
+		nextToken();
+		if (token == "do") {
+			code("do", popOperand());
+			execStmt();
+			nextToken();
+			if (token == "post_while") {
+				code("post_while", popOperand(), popOperand());
+			}
+		}
+	}
+}
+void Compiler :: repeatStmt() {
+	if (token == "repeat") {
+		code("repeat");
+		execStmts();
+		nextToken();
+		if (token == "until") {
+			express();
+			code("until", popOperand(), popOperand());
+			nextToken();
+			if (token != ";") {
+				processError("Token ';' not found, must have for concluding statements");
+			}
+		}
+	}
+}
+void Compiler :: nullStmt() {
+	//...
+}
+/*----------------------- EMITS FOR STAGE 2 -----------------------------*/
+void Compiler :: emitWhileCode(string operand1, string operand2) {
+	//...
+}
+void Compiler :: emitDoCode(string operand1, string operand2) {
+	//...
+}
+void Compiler :: emitPostWhileCode(string operand1, string operand2) {
+	//...
+}
+void Compiler :: emitRepeatCode(string operand1, string operand2) {
+	//...
 }
