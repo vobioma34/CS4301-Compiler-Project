@@ -214,7 +214,7 @@ string Compiler :: nextToken() {
 //determines if s is a keyword, true if s is a keyword and false otherwise
 bool Compiler :: isKeyword(string s) const{
     string keywords[] = {"program", "const", "var", "integer", "boolean",
-                            "begin", "end", "true", "false", "not", "and", "or", "mod", "div", "and", "or", "read", "write"};
+                            "begin", "end", "true", "false", "not", "and", "or", "mod", "div", "and", "or", "read", "write", "if", "then", "else", "while", "do", "repeat", "until"};
 
     //go through keywords array and see if s matches nay key words
     for(uint i = 0; i < sizeof(keywords)/sizeof(keywords[0]); i++){ //change hardcoded 10 and ask Dr.Motl
@@ -574,17 +574,24 @@ void Compiler::progStmt() // token should be "program"
 }
 void Compiler::beginEndStmt() // token should be "begin"
 {
+	// This function may be change for stage2 material.
+	string variable;
 	// Must be modify for stage2 material
-	if (token != "begin") {
+	if (token != "begin") 
+	{
 		processError("keyword \"begin\" expected");
 	}
 	nextToken();
-	if(isNonKeyId(token) || token == "read" || token == "write") 
+	// Modify these if condition for the new stage 2 material
+	if(isNonKeyId(token) || token == "read" || token == "write" || token == "if" || token == "while" || token == "repeat" || token == "until" || token == "begin") 
 	{
 		execStmts();
 	}
-	if (token != "end" && !isNonKeyId(token) && token != "read" && token != "write")
-		processError("keyword \"end\" , NON_KEY_ID, \"read\", or \"write\" expected");
+	// Modify this if condition for the new stage 2 material
+	if (token != "end" && !isNonKeyId(token) && token != "read" && token != "write" && token != "if" && token != "while" && token != "repeat" && token != "until" && token != "begin") 
+	{
+		processError("keyword \"begin\", \"end\", NON_KEY_ID, \"read\", \"write\", \"if\", \"while\", \"repeat\", or \"until\" expected");
+	}
 	if (nextToken() != ".") {
 		processError("period expected");
 	}
@@ -717,6 +724,22 @@ void Compiler :: code(string op, string operand1, string operand2) {
 	else if (op == "repeat") {
 		// call to the emitRepeatCode() function
 		emitRepeatCode(operand1, operand2);
+	}
+	else if (op == "then") {
+		// call to the emitThenCode() function
+		emitThenCode(operand1,operand2);
+	}
+	else if (op == "else") {
+		// call to the emitElseCode() function
+		emitElseCode(operand1, operand2);
+	}
+	else if (op == "post_if") {
+		// call to the emitPostIfCode() function
+		emitPostIfCode(operand1, operand2);
+	}
+	else if (op == "until") {
+		// call to the emitUntilCode() function
+		emitUntilCode(operand1, operand2);
 	}
 	else {
 		processError("compiler error since function code should not be called with illegal arguments");
@@ -1101,37 +1124,46 @@ void Compiler :: assignStmt(){
 }
 
 void Compiler :: execStmt(){
-	if(token == "read"){
-		readStmt();
+	if(token == "read")
+	{
+		readStmt(); // call to the readStmt function
 	}
-	else if(token == "write"){
-		writeStmt();
+	else if(token == "write")
+	{
+		writeStmt(); // call to the writeStmt function
 	}
-	else if (isNonKeyId(token)){ //dont jump ahead too far
-		assignStmt();
+	else if (isNonKeyId(token)) 
+	{ 
+		assignStmt(); // call to the assignStmt function
 	} 
-	else if (token == "if") {
+	else if (token == "if") 
+	{
 		ifStmt(); // call to the ifStmt function 
 	}
-	else if (token == "while") {
+	else if (token == "while") 
+	{
 		whileStmt(); // call to the whileStmt function
 	}
-	else if (token == "repeat") {
+	else if (token == "repeat") 
+	{
 		repeatStmt(); // call to the repeatStmt function
 	}
-	else if (token == ";") {
+	else if (token == ";") 
+	{
 		nullStmt(); // call to the nullStmt function
 	}
-	else if (token == "begin") {
-		beginEndStmt();
+	else if (token == "begin") 
+	{
+		beginEndStmt(); // call to the beginEndStmt function
 	}
-	else{
-		processError("non_key_id, \"read\", or \"write\" expected");
+	else
+	{
+		processError("non_key_id, \"read\", \"write\", \"begin\", \"if\", \"while\", \"repeat\", or \";\" expected");
 	}
 }
 
-//also fix this
 void Compiler :: execStmts(){
+	// check this function for stage 2 material; may be incorrect
 	while(token != "end"){
 		execStmt();
 		nextToken();
@@ -1887,13 +1919,33 @@ bool Compiler :: isLabel(string s) const {
 		return false;
 	}
 }
-void Compiler :: ifStmt() {
- //...
+void Compiler :: ifStmt() 
+{
+	if (token == "if") // if the token received is the "if" keyword
+	{
+		express();
+		nextToken(); // call to the next token
+		if (token == "then") // if the token received is the "then" keyword
+		{
+			code("then", popOperand());
+			//nextToken();
+			execStmt();
+			elsePt();
+		}
+	}
 }
-void Compiler :: elsePt() {
- //...
+void Compiler :: elsePt() 
+{
+	if (token == "else") // if the token received is the "else" keyword
+	{
+		code("else", popOperand());
+		execStmt();
+		code("post_if", popOperand());
+	}
+	code("post_if", popOperand()); // regardless call code 
 }
-void Compiler :: whileStmt() {
+void Compiler :: whileStmt() 
+{
 	if (token == "while") {
 		code("while");
 		express();
@@ -1908,7 +1960,8 @@ void Compiler :: whileStmt() {
 		}
 	}
 }
-void Compiler :: repeatStmt() {
+void Compiler :: repeatStmt() 
+{
 	if (token == "repeat") {
 		code("repeat");
 		execStmts();
@@ -1923,19 +1976,99 @@ void Compiler :: repeatStmt() {
 		}
 	}
 }
-void Compiler :: nullStmt() {
-	//...
+void Compiler :: nullStmt() 
+{
+	// may be incorrect for this function
+	if (token != ";") 
+	{
+		processError("Token ';' not found, must have for concluding statements");
+	}
 }
 /*----------------------- EMITS FOR STAGE 2 -----------------------------*/
-void Compiler :: emitWhileCode(string operand1, string operand2) {
-	//...
+void Compiler :: emitWhileCode(string operand1, string operand2) 
+{
+	string tempLabel; // created a string variable called tempLabel
+	tempLabel = getLabel(); // assign next label to tempLabel
+	emit(tempLabel + ":","","","; while"); // emit instruction to label this point of object code as tempLabel
+	pushOperand(tempLabel); // push tempLabel into operandStk
+	contentsOfAReg = ""; // deassign operands from all registers
 }
-void Compiler :: emitDoCode(string operand1, string operand2) {
-	//...
+void Compiler :: emitDoCode(string operand1, string operand2) 
+{
+	string tempLabel; // created a string variable called tempLabel
+	if (whichType(operand1) != BOOLEAN) { // if the datatype of operand1 is not boolean
+		processError("while predicate must be of type boolean"); // error message
+	}
+	tempLabel = getLabel(); // assign next label to tempLabel
+	if (contentsOfAReg != operand1) { // if operand1 is not in the A Register
+		emit("","mov","eax,[" + symbolTable.at(operand1).getInternalName() + "]","; AReg = " + operand1); // emit instruction to move operand1 to the A register
+	}
+	emit("", "cmp", "eax,0", "; compare eax to 0"); // emit instruction to compare the A register to zero (false)
+	emit("", "je", tempLabel, "; if " + symbolTable.at(operand2).getInternalName() + " is false then jump to end while"); // emit code to branch to tempLabel if the compare indicates equality
+	pushOperand(tempLabel); // push tempLabel onto operandStk
+	if (isTemporary(operand1) == true) { // if operand1 is a temp
+		freeTemp(); // free operand's name for reuse
+	}
+	contentsOfAReg = ""; // deassign operands from all registers
 }
-void Compiler :: emitPostWhileCode(string operand1, string operand2) {
-	//...
+void Compiler :: emitPostWhileCode(string operand1, string operand2) 
+{
+	emit("","jmp",operand2,"; end while"); // emit instruction which branches unconditionally to the beginning of the loop, i.e., to the value of operand2
+	emit(operand1 + ":","","",""); // emit instruction which labels this point of the object code with the argument operand1
+	contentsOfAReg = ""; // deassign operands from all registers
 }
-void Compiler :: emitRepeatCode(string operand1, string operand2) {
-	//...
+void Compiler :: emitRepeatCode(string operand1, string operand2) 
+{
+	string tempLabel; // created a string variable called tempLabel
+	tempLabel = getLabel(); // assign next label to tempLabel
+	emit(tempLabel + ":","","","; repeat"); // emit instruction to label this point in the object code with the value of tempLabel
+	pushOperand(tempLabel); // push tempLabel into operandStk
+	contentsOfAReg = ""; // deassign operands from all registers
+}
+void Compiler :: emitElseCode(string operand1, string operand2)
+{
+	string tempLabel; // created a string variable called tempLabel
+	tempLabel = getLabel(); // assign next label to tempLabel
+	emit("", "jmp", tempLabel, "; unconditionally jump"); // emit instruction to branch unconditionally to tempLabel
+	emit(operand1 + ":", "", "", ""); // emit instruction to label this point of object code with the argument operand1
+	pushOperand(tempLabel); // push tempLabel onto operandStk
+	contentsOfAReg = ""; // deassign operands from all registers
+}
+void Compiler :: emitPostIfCode(string operand1, string operand2)
+{
+	emit(operand1 + ":","","",""); // emit instruction to label this point of object code with the argument operand1
+	contentsOfAReg = ""; // deassign operands from all registers
+}
+void Compiler :: emitThenCode(string operand1, string operand2)
+{
+	string tempLabel; // created a string variable called tempLabel
+	if (whichType(operand1) != BOOLEAN) { // if the data type of operand1 is not boolean
+		processError("if predicate must be of type boolean"); // error message
+	}
+	tempLabel = getLabel(); // assign next label to tempLabel
+	if (contentsOfAReg != operand1) { // if the contents of the A Register is not operand1
+		emit("","mov","eax,[" + symbolTable.at(operand1).getInternalName() + "]","; AReg = " + operand1); // emit instruction to move operand1 to the A register
+	}
+	emit("", "cmp", "eax,0", "; compare eax to 0"); // emit instruction to compare the A register to zero (false)
+	emit("", "je", tempLabel, "; if " + symbolTable.at(operand2).getInternalName() + " is false then jump to end while"); // emit code to branch to tempLabel if the compare indicates equality
+	pushOperand(tempLabel); //  push tempLabel onto operandStk so that it can be referenced when emitElseCode() or emitPostIfCode() is called
+	if (isTemporary(operand1) == true) { // if operand1 is a temp then
+		freeTemp(); // free it for reuse 
+	}
+	contentsOfAReg = ""; // deassign operands from all registers
+}
+void Compiler :: emitUntilCode(string operand1, string operand2)
+{
+	if (whichType(operand1) != BOOLEAN) { // if the data type of operand1 is not boolean
+		processError("if predicate must be of type boolean"); // error message
+	}
+	if (contentsOfAReg != operand1) { // if the contents of a A Register is not operand1
+		emit("", "mov", "eax,[" + symbolTable.at(operand1).getInternalName() + "]", "; AReg = " + operand1); // emit instruction to move operand1 to the A register
+	}
+	emit("","cmp","eax,0","; compare eax to 0"); // emit instruction to compare the A register to zero (false)
+	emit("", "je", operand2, "; if " + symbolTable.at(operand1).getInternalName() + " is false then jump to end while"); // emit code to branch to operand2 if the compare indicates equality
+	if (isTemporary(operand1) == true) { // if the operand1 is a temp then
+		freeTemp(); // free for reuse
+	}
+	contentsOfAReg = ""; // deassign operands from all registers
 }
