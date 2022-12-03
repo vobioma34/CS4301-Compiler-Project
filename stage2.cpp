@@ -577,11 +577,13 @@ void Compiler::beginEndStmt() // token should be "begin"
 	// This function may be change for stage2 material.
 	string variable;
 	// Must be modify for stage2 material
+	//cout << token << endl; <- begin
 	if (token != "begin") 
 	{
 		processError("keyword \"begin\" expected");
 	}
 	nextToken();
+	//cout << token << endl; <- read
 	// Modify these if condition for the new stage 2 material
 	if(isNonKeyId(token) || token == "read" || token == "write" || token == "if" || token == "while" || token == "repeat" || token == "until" || token == "begin") 
 	{
@@ -592,8 +594,11 @@ void Compiler::beginEndStmt() // token should be "begin"
 	{
 		processError("keyword \"begin\", \"end\", NON_KEY_ID, \"read\", \"write\", \"if\", \"while\", \"repeat\", or \"until\" expected");
 	}
-	if (nextToken() != ".") {
-		processError("period expected");
+	variable = nextToken();
+	// This may be correct or incorrect
+	if (variable != "." && variable != ";") {
+		//cout << "HI" << endl;
+		processError("period or semicolon expected");
 	}
 	nextToken();
 	code("end", ".");
@@ -840,19 +845,28 @@ string Compiler :: genInternalName(storeTypes stype) const{
 /*----------------------- NEW STUFF FOR STAGE1 ----------------------*/
 
 /* --------------- PUSH AND POP OPERTAIONS ----------------------- */
-void Compiler::pushOperand(string name){ 
-   if(isLiteral(name) && symbolTable.count(name) == 0) {
-		if(name == "true")
-			insert("TRUE", BOOLEAN, CONSTANT, name, YES, 1);
-		else if(name == "false")
-			insert("FALSE", BOOLEAN, CONSTANT, name, YES, 1);
-		else
-			insert(name, whichType(name), CONSTANT, name, YES, 1);
-	}
-	else if(!(isLiteral(name)) && symbolTable.count(name) == 0) {
-		processError("reference to undefined symbol: " + name);
-	}
-	operandStk.push(name);
+void Compiler::pushOperand(string name) { 
+   if(name[0] == '.' && name[1] == 'L')
+   {
+        operandStk.push(name);
+   }
+   else if(isLiteral(name) && symbolTable.count(name) == 0)
+   {
+        if(name == "true")
+            insert("TRUE", BOOLEAN, CONSTANT, name, YES, 1);
+        else if(name == "false")
+            insert("FALSE", BOOLEAN, CONSTANT, name, YES, 1);
+        else
+            insert(name, whichType(name), CONSTANT, name, YES, 1);
+
+        operandStk.push(name);
+   }
+   else if(!(isLiteral(name)) && symbolTable.count(name) == 0)
+   {
+       processError("reference to undefined symbol: " + name);
+   }
+   else 
+       operandStk.push(name);
 }
 string Compiler::popOperand() {
 	if (!operandStk.empty()) {
@@ -1912,7 +1926,8 @@ string Compiler::getLabel() {
 /*------------------ STAGE 2 STUFF -------------------------*/
 bool Compiler :: isLabel(string s) const {
 	// Copy and pasted from the isTemporary() function with the appropriate modifications
-	if(s.at(0) == 'L'){
+	//cout << s.at(0) << " HEY" << endl;
+	if(s.at(1) == 'L'){
 		return true;
 	}
 	else {
@@ -1944,20 +1959,18 @@ void Compiler :: elsePt()
 	}
 	code("post_if", popOperand()); // regardless call code 
 }
-void Compiler :: whileStmt() 
+void Compiler :: whileStmt() // token should be while
 {
-	if (token == "while") {
+    if (token == "while") {
 		code("while");
 		express();
 		nextToken();
 		if (token == "do") {
 			code("do", popOperand());
 			execStmt();
-			nextToken();
-			if (token == "post_while") {
-				code("post_while", popOperand(), popOperand());
-			}
+			//code("post_while", popOperand(), popOperand());
 		}
+		code("post_while", popOperand(), popOperand());
 	}
 }
 void Compiler :: repeatStmt() 
@@ -2006,7 +2019,7 @@ void Compiler :: emitDoCode(string operand1, string operand2)
 	emit("", "cmp", "eax,0", "; compare eax to 0"); // emit instruction to compare the A register to zero (false)
 	emit("", "je", tempLabel, "; if " + symbolTable.at(operand2).getInternalName() + " is false then jump to end while"); // emit code to branch to tempLabel if the compare indicates equality
 	pushOperand(tempLabel); // push tempLabel onto operandStk
-	if (isTemporary(operand1) == true) { // if operand1 is a temp
+	if (isTemporary(operand1)) { // if operand1 is a temp
 		freeTemp(); // free operand's name for reuse
 	}
 	contentsOfAReg = ""; // deassign operands from all registers
