@@ -574,6 +574,9 @@ void Compiler::progStmt() // token should be "program"
 }
 void Compiler::beginEndStmt() // token should be "begin"
 {
+	static stack<int> begins;
+	begins.push(1);
+
 	// This function may be change for stage2 material.
 	string variable;
 	// Must be modify for stage2 material
@@ -600,8 +603,16 @@ void Compiler::beginEndStmt() // token should be "begin"
 		//cout << "HI" << endl;
 		processError("period or semicolon expected");
 	}
-	nextToken();
-	code("end", ".");
+	if(token == "." && begins.size() > 1){
+		processError("ends exepcted the final 'end' must have ';' ");
+	}
+	if(token == "." && begins.size() == 1){
+		code("end", ".", "");
+	}
+	if(token != ";"){
+		nextToken();
+	}
+	begins.pop();
 }
 
 void Compiler :: varStmts(){
@@ -846,6 +857,9 @@ string Compiler :: genInternalName(storeTypes stype) const{
 
 /* --------------- PUSH AND POP OPERTAIONS ----------------------- */
 void Compiler::pushOperand(string name) { 
+
+	//add mason data set
+
    if(name[0] == '.' && name[1] == 'L')
    {
         operandStk.push(name);
@@ -867,11 +881,13 @@ void Compiler::pushOperand(string name) {
    }
    else 
        operandStk.push(name);
+	cout << "pushed: " + name << endl;
 }
 string Compiler::popOperand() {
 	if (!operandStk.empty()) {
 		string topElement = operandStk.top();
 		operandStk.pop();
+		cout << topElement << endl; 
 		return topElement;
 	} else {
 		processError("compiler error; operand stack underflow operand");
@@ -1178,9 +1194,11 @@ void Compiler :: execStmt(){
 
 void Compiler :: execStmts(){
 	// check this function for stage 2 material; may be incorrect
-	while(token != "end"){
+	while(token != "end" && token != "until"){
 		execStmt();
-		nextToken();
+		if(token == ";"){
+			nextToken();
+		}
 		//execStmts();
 	}
 }
@@ -1744,18 +1762,25 @@ void Compiler :: emitLessThanCode(string operand1, string operand2){
 		symbolTable.at(contentsOfAReg).setAlloc(YES);
 		contentsOfAReg = "";
 	}
-	if(contentsOfAReg != operand1 && contentsOfAReg != operand2){
+	if(contentsOfAReg != operand2){
 		emit("", "mov", "eax,[" + symbolTable.at(operand2).getInternalName() + "]", "; AReg = " + operand2);
 		contentsOfAReg = operand2;
 	}
-		emit("", "cmp ", "eax,[" + symbolTable.at(operand1).getInternalName() + "]", "; compare " + operand2 + " and " + operand1);
-		emit("", "jl ", label1, "; if " + operand2 + " < " + operand1 + " then jump to set eax to TRUE");
-		emit("", "mov ", "eax,[FALSE]", "; else set eax to FALSE");
-		emit("", "jmp ", label2, "; unconditionally jump");
-		emit(label1 + ":", "", "" ,"");
-		emit("", "mov ", "eax,[TRUE]", "; set eax to TRUE");
-		emit(label2 + ":", "", "" ,"");
-	
+	emit("", "cmp ", "eax,[" + symbolTable.at(operand1).getInternalName() + "]", "; compare " + operand2 + " and " + operand1);
+	emit("", "jl ", label1, "; if " + operand2 + " < " + operand1 + " then jump to set eax to TRUE");
+	emit("", "mov ", "eax,[FALSE]", "; else set eax to FALSE");
+	emit("", "jmp ", label2, "; unconditionally jump");
+	emit(label1 + ":", "", "" ,"");
+	emit("", "mov ", "eax,[TRUE]", "; set eax to TRUE");
+	emit(label2 + ":", "", "" ,"");
+
+	// inserting true and false into the symbol table
+	if (symbolTable.count("true") == 0) {
+		symbolTable.insert({ "true", SymbolTableEntry("TRUE", BOOLEAN, CONSTANT, "-1", YES, 1) });
+	}
+	if (symbolTable.count("false") == 0) {
+		symbolTable.insert({ "false", SymbolTableEntry("FALSE", BOOLEAN, CONSTANT, "0", YES, 1) });
+	}
 
 	//if operands are temporaroy deassign them
 	if(isTemporary(operand1)){
@@ -1936,57 +1961,87 @@ bool Compiler :: isLabel(string s) const {
 }
 void Compiler :: ifStmt() 
 {
+	bool nestedIf = false;
+
 	if (token == "if") // if the token received is the "if" keyword
 	{
+		nextToken();
 		express();
-		nextToken(); // call to the next token
-		if (token == "then") // if the token received is the "then" keyword
+		//nextToken(); // call to the next token
+		if (token != "then") // if the token received is the "then" keyword
 		{
-			code("then", popOperand());
-			//nextToken();
-			execStmt();
-			elsePt();
+			processError("Keyword 'then' expcteded");
 		}
+
+		code("then", popOperand(), "");
+		nextToken();
+		if(token == "if"){
+			nestedIf = true;
+		}
+		
+		execStmt();
+
+		if(nestedIf == false){
+			nextToken();
+		}
+		
+		if(token == "else"){
+			code("else", popOperand(), "");
+			nextToken();
+			elsePt();
+			code("post_if", popOperand(), "");
+		}
+		else{
+			code("post_if",popOperand(), "");
+		}
+		
 	}
 }
 void Compiler :: elsePt() 
 {
-	if (token == "else") // if the token received is the "else" keyword
-	{
-		code("else", popOperand());
+
 		execStmt();
-		code("post_if", popOperand());
-	}
-	code("post_if", popOperand()); // regardless call code 
+
 }
 void Compiler :: whileStmt() // token should be while
 {
+	string lhs, rhs;
+
     if (token == "while") {
-		code("while");
-		express();
+		code("while","","");
 		nextToken();
-		if (token == "do") {
-			code("do", popOperand());
-			execStmt();
-			//code("post_while", popOperand(), popOperand());
+		express();
+		if (token != "do") {
+			processError("Keyword 'do' expected.");
 		}
-		code("post_while", popOperand(), popOperand());
+
+		code("do", popOperand(), "");
+		nextToken();
+		execStmt();
+		lhs = popOperand();
+		rhs = popOperand();
+		code("post_while", lhs, rhs);
 	}
 }
 void Compiler :: repeatStmt() 
 {
+	string lhs, rhs;
 	if (token == "repeat") {
-		code("repeat");
-		execStmts();
+
+		code("repeat","","");
 		nextToken();
-		if (token == "until") {
-			express();
-			code("until", popOperand(), popOperand());
-			nextToken();
-			if (token != ";") {
-				processError("Token ';' not found, must have for concluding statements");
-			}
+		execStmts();
+
+		if (token != "until") {
+			processError("keyword 'until' expected");
+		
 		}
+		nextToken();
+		express();
+		lhs = popOperand();
+		rhs = popOperand();
+		code("until", lhs, rhs);
+		nextToken();
 	}
 }
 void Compiler :: nullStmt() 
@@ -2003,7 +2058,9 @@ void Compiler :: emitWhileCode(string operand1, string operand2)
 	string tempLabel; // created a string variable called tempLabel
 	tempLabel = getLabel(); // assign next label to tempLabel
 	emit(tempLabel + ":","","","; while"); // emit instruction to label this point of object code as tempLabel
+	cout << "while label" + tempLabel << endl;
 	pushOperand(tempLabel); // push tempLabel into operandStk
+	cout << "AA" << endl;
 	contentsOfAReg = ""; // deassign operands from all registers
 }
 void Compiler :: emitDoCode(string operand1, string operand2) 
@@ -2012,21 +2069,28 @@ void Compiler :: emitDoCode(string operand1, string operand2)
 	if (whichType(operand1) != BOOLEAN) { // if the datatype of operand1 is not boolean
 		processError("while predicate must be of type boolean"); // error message
 	}
+	cout << "BB" << endl;
 	tempLabel = getLabel(); // assign next label to tempLabel
 	if (contentsOfAReg != operand1) { // if operand1 is not in the A Register
 		emit("","mov","eax,[" + symbolTable.at(operand1).getInternalName() + "]","; AReg = " + operand1); // emit instruction to move operand1 to the A register
+		contentsOfAReg = operand1;
 	}
+	cout << "CC" << endl;
 	emit("", "cmp", "eax,0", "; compare eax to 0"); // emit instruction to compare the A register to zero (false)
-	emit("", "je", tempLabel, "; if " + symbolTable.at(operand2).getInternalName() + " is false then jump to end while"); // emit code to branch to tempLabel if the compare indicates equality
+	emit("", "je", tempLabel, "; if " + operand1 + " is false then jump to end while TEST"); // emit code to branch to tempLabel if the compare indicates equality
+	cout << "DD" << endl;
 	pushOperand(tempLabel); // push tempLabel onto operandStk
 	if (isTemporary(operand1)) { // if operand1 is a temp
 		freeTemp(); // free operand's name for reuse
 	}
+	cout << "EE" << endl;
 	contentsOfAReg = ""; // deassign operands from all registers
 }
 void Compiler :: emitPostWhileCode(string operand1, string operand2) 
 {
+	cout << "FF" << endl;
 	emit("","jmp",operand2,"; end while"); // emit instruction which branches unconditionally to the beginning of the loop, i.e., to the value of operand2
+	cout << "GG" << endl;
 	emit(operand1 + ":","","",""); // emit instruction which labels this point of the object code with the argument operand1
 	contentsOfAReg = ""; // deassign operands from all registers
 }
@@ -2049,7 +2113,7 @@ void Compiler :: emitElseCode(string operand1, string operand2)
 }
 void Compiler :: emitPostIfCode(string operand1, string operand2)
 {
-	emit(operand1 + ":","","",""); // emit instruction to label this point of object code with the argument operand1
+	emit(operand1 + ":","","","; end if"); // emit instruction to label this point of object code with the argument operand1
 	contentsOfAReg = ""; // deassign operands from all registers
 }
 void Compiler :: emitThenCode(string operand1, string operand2)
@@ -2063,7 +2127,7 @@ void Compiler :: emitThenCode(string operand1, string operand2)
 		emit("","mov","eax,[" + symbolTable.at(operand1).getInternalName() + "]","; AReg = " + operand1); // emit instruction to move operand1 to the A register
 	}
 	emit("", "cmp", "eax,0", "; compare eax to 0"); // emit instruction to compare the A register to zero (false)
-	emit("", "je", tempLabel, "; if " + symbolTable.at(operand2).getInternalName() + " is false then jump to end while"); // emit code to branch to tempLabel if the compare indicates equality
+	emit("", "je", tempLabel, "; if " + operand1 + " is false then jump to end of if"); // emit code to branch to tempLabel if the compare indicates equality
 	pushOperand(tempLabel); //  push tempLabel onto operandStk so that it can be referenced when emitElseCode() or emitPostIfCode() is called
 	if (isTemporary(operand1) == true) { // if operand1 is a temp then
 		freeTemp(); // free it for reuse 
@@ -2079,7 +2143,7 @@ void Compiler :: emitUntilCode(string operand1, string operand2)
 		emit("", "mov", "eax,[" + symbolTable.at(operand1).getInternalName() + "]", "; AReg = " + operand1); // emit instruction to move operand1 to the A register
 	}
 	emit("","cmp","eax,0","; compare eax to 0"); // emit instruction to compare the A register to zero (false)
-	emit("", "je", operand2, "; if " + symbolTable.at(operand1).getInternalName() + " is false then jump to end while"); // emit code to branch to operand2 if the compare indicates equality
+	emit("", "je", operand2, "; if " + operand1 + " is false then jump to end while"); // emit code to branch to operand2 if the compare indicates equality
 	if (isTemporary(operand1) == true) { // if the operand1 is a temp then
 		freeTemp(); // free for reuse
 	}
