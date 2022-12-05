@@ -595,7 +595,7 @@ void Compiler::beginEndStmt() // token should be "begin"
 	// Modify this if condition for the new stage 2 material
 	if (token != "end" && !isNonKeyId(token) && token != "read" && token != "write" && token != "if" && token != "while" && token != "repeat" && token != "until" && token != "begin") 
 	{
-		processError("keyword \"begin\", \"end\", NON_KEY_ID, \"read\", \"write\", \"if\", \"while\", \"repeat\", or \"until\" expected");
+		processError("keyword \"begin\", \"end\", NON_KEY_ID, \"read\", \"write\", \"if\", \"while\", \"repeat\", \"end\" or \"until\" expected");
 	}
 	variable = nextToken();
 	// This may be correct or incorrect
@@ -604,7 +604,7 @@ void Compiler::beginEndStmt() // token should be "begin"
 		processError("period or semicolon expected");
 	}
 	if(token == "." && begins.size() > 1){
-		processError("ends exepcted the final 'end' must have ';' ");
+		processError("ends except the final 'end' must have ';' after, and final end must have '.' after");
 	}
 	if(token == "." && begins.size() == 1){
 		code("end", ".", "");
@@ -1188,7 +1188,7 @@ void Compiler :: execStmt(){
 	}
 	else
 	{
-		processError("non_key_id, \"read\", \"write\", \"begin\", \"if\", \"while\", \"repeat\", or \";\" expected");
+		processError("non_key_id, \"read\", \"write\", \"begin\", \"if\", \"while\", \"repeat\", \"end\" or \";\" expected");
 	}
 }
 
@@ -1474,7 +1474,7 @@ void Compiler :: emitModuloCode(string operand1, string operand2) {
 		processError("Only integers may be used with 'mod'");
 	}
 	if (isTemporary(contentsOfAReg) == true && contentsOfAReg != operand2) {
-		emit("", "mov", "[" + contentsOfAReg + "],eax", "; fill this in");
+		emit("", "mov", "[" + contentsOfAReg + "],eax", "; deassign AReg");
 		symbolTable.at(contentsOfAReg).setAlloc(YES);
 		contentsOfAReg = ""; // deassign it
 	}
@@ -2077,7 +2077,7 @@ void Compiler :: emitDoCode(string operand1, string operand2)
 	}
 	cout << "CC" << endl;
 	emit("", "cmp", "eax,0", "; compare eax to 0"); // emit instruction to compare the A register to zero (false)
-	emit("", "je", tempLabel, "; if " + operand1 + " is false then jump to end while TEST"); // emit code to branch to tempLabel if the compare indicates equality
+	emit("", "je", tempLabel, "; if " + operand1 + " is false then jump to end while"); // emit code to branch to tempLabel if the compare indicates equality
 	cout << "DD" << endl;
 	pushOperand(tempLabel); // push tempLabel onto operandStk
 	if (isTemporary(operand1)) { // if operand1 is a temp
@@ -2106,8 +2106,8 @@ void Compiler :: emitElseCode(string operand1, string operand2)
 {
 	string tempLabel; // created a string variable called tempLabel
 	tempLabel = getLabel(); // assign next label to tempLabel
-	emit("", "jmp", tempLabel, "; unconditionally jump"); // emit instruction to branch unconditionally to tempLabel
-	emit(operand1 + ":", "", "", ""); // emit instruction to label this point of object code with the argument operand1
+	emit("", "jmp", tempLabel, "; jump to end if"); // emit instruction to branch unconditionally to tempLabel
+	emit(operand1 + ":", "", "", "; else"); // emit instruction to label this point of object code with the argument operand1
 	pushOperand(tempLabel); // push tempLabel onto operandStk
 	contentsOfAReg = ""; // deassign operands from all registers
 }
@@ -2143,7 +2143,7 @@ void Compiler :: emitUntilCode(string operand1, string operand2)
 		emit("", "mov", "eax,[" + symbolTable.at(operand1).getInternalName() + "]", "; AReg = " + operand1); // emit instruction to move operand1 to the A register
 	}
 	emit("","cmp","eax,0","; compare eax to 0"); // emit instruction to compare the A register to zero (false)
-	emit("", "je", operand2, "; if " + operand1 + " is false then jump to end while"); // emit code to branch to operand2 if the compare indicates equality
+	emit("", "je", operand2, "; until " + operand1 + " is true"); // emit code to branch to operand2 if the compare indicates equality
 	if (isTemporary(operand1) == true) { // if the operand1 is a temp then
 		freeTemp(); // free for reuse
 	}
