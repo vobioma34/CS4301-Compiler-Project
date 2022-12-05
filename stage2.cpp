@@ -33,7 +33,7 @@ Compiler::~Compiler(){
 
 void Compiler::createListingHeader(){
     time_t result = time(nullptr);
-	listingFile << "STAGE1:          " << "ESAI BARRON, VICTOR OBIOMA         " << ctime(&result) << endl;
+	listingFile << "STAGE2:          " << "ESAI BARRON, VICTOR OBIOMA         " << ctime(&result) << endl;
 	listingFile << "LINE NO.              " << "SOURCE STATEMENT" << "\r\n";
 	listingFile << endl;
 	//lineNo++;
@@ -580,13 +580,11 @@ void Compiler::beginEndStmt() // token should be "begin"
 	// This function may be change for stage2 material.
 	string variable;
 	// Must be modify for stage2 material
-	//cout << token << endl; <- begin
 	if (token != "begin") 
 	{
 		processError("keyword \"begin\" expected");
 	}
 	nextToken();
-	//cout << token << endl; <- read
 	// Modify these if condition for the new stage 2 material
 	if(isNonKeyId(token) || token == "read" || token == "write" || token == "if" || token == "while" || token == "repeat" || token == "until" || token == "begin") 
 	{
@@ -600,7 +598,6 @@ void Compiler::beginEndStmt() // token should be "begin"
 	variable = nextToken();
 	// This may be correct or incorrect
 	if (variable != "." && variable != ";") {
-		//cout << "HI" << endl;
 		processError("period or semicolon expected");
 	}
 	if(token == "." && begins.size() > 1){
@@ -881,13 +878,11 @@ void Compiler::pushOperand(string name) {
    }
    else 
        operandStk.push(name);
-	cout << "pushed: " + name << endl;
 }
 string Compiler::popOperand() {
 	if (!operandStk.empty()) {
 		string topElement = operandStk.top();
 		operandStk.pop();
-		cout << topElement << endl; 
 		return topElement;
 	} else {
 		processError("compiler error; operand stack underflow operand");
@@ -1951,7 +1946,6 @@ string Compiler::getLabel() {
 /*------------------ STAGE 2 STUFF -------------------------*/
 bool Compiler :: isLabel(string s) const {
 	// Copy and pasted from the isTemporary() function with the appropriate modifications
-	//cout << s.at(0) << " HEY" << endl;
 	if(s.at(1) == 'L'){
 		return true;
 	}
@@ -2000,7 +1994,7 @@ void Compiler :: ifStmt()
 void Compiler :: elsePt() 
 {
 
-		execStmt();
+	execStmt();
 
 }
 void Compiler :: whileStmt() // token should be while
@@ -2058,9 +2052,7 @@ void Compiler :: emitWhileCode(string operand1, string operand2)
 	string tempLabel; // created a string variable called tempLabel
 	tempLabel = getLabel(); // assign next label to tempLabel
 	emit(tempLabel + ":","","","; while"); // emit instruction to label this point of object code as tempLabel
-	cout << "while label" + tempLabel << endl;
 	pushOperand(tempLabel); // push tempLabel into operandStk
-	cout << "AA" << endl;
 	contentsOfAReg = ""; // deassign operands from all registers
 }
 void Compiler :: emitDoCode(string operand1, string operand2) 
@@ -2069,28 +2061,22 @@ void Compiler :: emitDoCode(string operand1, string operand2)
 	if (whichType(operand1) != BOOLEAN) { // if the datatype of operand1 is not boolean
 		processError("while predicate must be of type boolean"); // error message
 	}
-	cout << "BB" << endl;
 	tempLabel = getLabel(); // assign next label to tempLabel
 	if (contentsOfAReg != operand1) { // if operand1 is not in the A Register
 		emit("","mov","eax,[" + symbolTable.at(operand1).getInternalName() + "]","; AReg = " + operand1); // emit instruction to move operand1 to the A register
 		contentsOfAReg = operand1;
 	}
-	cout << "CC" << endl;
 	emit("", "cmp", "eax,0", "; compare eax to 0"); // emit instruction to compare the A register to zero (false)
 	emit("", "je", tempLabel, "; if " + operand1 + " is false then jump to end while"); // emit code to branch to tempLabel if the compare indicates equality
-	cout << "DD" << endl;
 	pushOperand(tempLabel); // push tempLabel onto operandStk
 	if (isTemporary(operand1)) { // if operand1 is a temp
 		freeTemp(); // free operand's name for reuse
 	}
-	cout << "EE" << endl;
 	contentsOfAReg = ""; // deassign operands from all registers
 }
 void Compiler :: emitPostWhileCode(string operand1, string operand2) 
 {
-	cout << "FF" << endl;
 	emit("","jmp",operand2,"; end while"); // emit instruction which branches unconditionally to the beginning of the loop, i.e., to the value of operand2
-	cout << "GG" << endl;
 	emit(operand1 + ":","","",""); // emit instruction which labels this point of the object code with the argument operand1
 	contentsOfAReg = ""; // deassign operands from all registers
 }
